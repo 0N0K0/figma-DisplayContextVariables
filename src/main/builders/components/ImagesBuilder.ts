@@ -342,9 +342,9 @@ export async function generateGallery(layoutGuide: layoutGuide) {
   for (const layout of layouts) {
     for (const [breakpoint, properties] of Object.entries(breakpoints)) {
       if (breakpoint === "xxl") continue;
-      if (properties.columns % 3 !== 0) continue;
-      const columns = properties.columns / 3;
-      const columnWidth = properties.contentWidth.columns[3].min;
+      if (properties.columns % 2 !== 0) continue;
+      const columns = properties.columns / 2;
+      const columnWidth = properties.contentWidth.columns[2].min;
       const galleryComponent: ComponentNode =
         (await elementBuilder.createElement(
           `layout=${layout}, breakpoint=${breakpoint}`,
