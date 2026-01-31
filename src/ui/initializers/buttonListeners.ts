@@ -6,7 +6,7 @@ import {
 import { FormData, getFormData } from "../utils/formData";
 import { debugPanel } from "../components/debugPanel";
 import { layoutGuide } from "../../common/types";
-import { COLLECTIONS } from "../../main/constants/variablesConstants";
+import { COLLECTIONS } from "../../common/constants/variablesConstants";
 
 // List of button IDs corresponding to different actions
 const btns = [

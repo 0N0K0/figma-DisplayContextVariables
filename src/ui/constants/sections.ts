@@ -1,20 +1,20 @@
 import { converter, formatHex8 } from "culori";
 import {
-  SHADE_STEPS,
-  OPACITIES_STEPS,
-} from "../../common/constants/colorConstants";
-import {
   generateGreyShades,
   generateShades,
 } from "../../common/utils/colorUtils";
 import type { SectionConfig, TabConfig, InputConfig } from "../types";
 import { toCamelCase, toKebabCase } from "../../common/utils/textUtils";
-import { COLLECTIONS } from "../../main/constants/variablesConstants";
+import {
+  COLLECTIONS,
+  OPACITIES,
+  SHADES,
+} from "../../common/constants/variablesConstants";
 
 // Générer les options d'opacité avec color indicators
-const neutralOpacityOptions = OPACITIES_STEPS.map((opacity) => {
+const neutralOpacityOptions = OPACITIES.map((opacity) => {
   // Gris avec luminosité 50
-  const greyShade = generateGreyShades(SHADE_STEPS)[50];
+  const greyShade = generateGreyShades(SHADES)[50];
   const greyShadeRGB = converter("rgb")(greyShade);
   if (!greyShadeRGB) {
     return { value: opacity, label: String(opacity) };
@@ -27,7 +27,7 @@ const neutralOpacityOptions = OPACITIES_STEPS.map((opacity) => {
     };
   }
 });
-const colorOpacityOptions = OPACITIES_STEPS.map((opacity) => {
+const colorOpacityOptions = OPACITIES.map((opacity) => {
   const shade =
     generateShades("#0DB9F2").find((s) => s.step === 300)?.color || "#0DB9F2";
   const shadeRGB = converter("rgb")(shade);
