@@ -1,16 +1,16 @@
-import { logger } from "../../utils/logger";
+import { catchError } from "../../utils/errorUtils";
 
 export class ComponentBuilder {
   /**
    * Crée un jeu de composants
    */
-  async createComponentSet(
-    name: string,
-    page: PageNode,
-    components: ComponentNode[],
-    properties?: Partial<ComponentSetNode>,
-  ): Promise<ComponentSetNode> {
-    try {
+  createComponentSet = catchError(
+    async (
+      name: string,
+      page: PageNode,
+      components: ComponentNode[],
+      properties?: Partial<ComponentSetNode>,
+    ): Promise<ComponentSetNode> => {
       figma.currentPage = page;
       page.selection = components;
       const componentSet: ComponentSetNode = figma.combineAsVariants(
@@ -22,23 +22,19 @@ export class ComponentBuilder {
         Object.assign(componentSet, properties);
       }
       return componentSet;
-    } catch (error) {
-      await logger.error(
-        `[createComponentSet] Erreur lors de la création du jeu de composants ${name} :`,
-        error,
-      );
-      throw error;
-    }
-  }
+    },
+    `${this.constructor.name}.createElement`,
+    false,
+  );
 
-  async createInstance(
-    mainComponent: ComponentNode,
-    parent?: PageNode | FrameNode | ComponentNode,
-    instanceSwap?: boolean,
-    properties?: Partial<SceneNode>,
-    size?: { width: number; height: number },
-  ): Promise<InstanceNode> {
-    try {
+  createInstance = catchError(
+    async (
+      mainComponent: ComponentNode,
+      parent?: PageNode | FrameNode | ComponentNode,
+      instanceSwap?: boolean,
+      properties?: Partial<SceneNode>,
+      size?: { width: number; height: number },
+    ): Promise<InstanceNode> => {
       const instance = mainComponent.createInstance();
       if (parent !== undefined) parent.appendChild(instance);
       if (properties !== undefined) Object.assign(instance, properties);
@@ -54,14 +50,10 @@ export class ComponentBuilder {
           },
         );
       return instance;
-    } catch (error) {
-      await logger.error(
-        `[createInstance] Erreur lors de la création de l'instance:`,
-        error,
-      );
-      throw error;
-    }
-  }
+    },
+    `${this.constructor.name}.createInstance`,
+    false,
+  );
 }
 
 export const componentBuilder = new ComponentBuilder();

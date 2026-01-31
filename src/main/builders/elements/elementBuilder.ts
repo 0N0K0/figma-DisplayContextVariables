@@ -1,66 +1,69 @@
 import { logger } from "../../utils/logger";
+import { catchError } from "../../utils/errorUtils";
+import { loadFont } from "../../utils/typographyUtils";
 
 export class ElementBuilder {
   /**
    * Obtient un élément par son nom
    */
-  async getElement(
-    name: string,
-    parent: PageNode | FrameNode | ComponentNode,
-  ): Promise<SceneNode | undefined> {
-    try {
+  getElement = catchError(
+    async (
+      name: string,
+      parent: PageNode | FrameNode | ComponentNode,
+    ): Promise<SceneNode | undefined> => {
       const elements = await this.getElements(parent);
       const element = elements.find((e) => e.name === name) as
         | SceneNode
         | undefined;
       if (!element) {
-        await logger.info(`[getElement] Element '${name}' non trouvé.`);
+        await logger.info(
+          `Element '${name}' non trouvé.`,
+          undefined,
+          `${this.constructor.name}.getElement`,
+        );
         return undefined;
       }
       return element;
-    } catch (error) {
-      await logger.error(
-        `[getElement] Erreur lors de la récupération de l'élément '${name}':`,
-        error,
-      );
-      throw error;
-    }
-  }
+    },
+    `${this.constructor.name}.getElement`,
+    false,
+  );
 
   /**
    * Obtient tous les éléments d'un parent
    */
-  async getElements(
-    parent: PageNode | FrameNode | ComponentNode,
-  ): Promise<readonly SceneNode[]> {
-    try {
+  getElements = catchError(
+    async (
+      parent: PageNode | FrameNode | ComponentNode,
+    ): Promise<readonly SceneNode[]> => {
       const elements = parent.children;
       await logger.info(
-        `[getElements] Nombre d'éléments trouvés: ${elements.length}`,
+        `Nombre d'éléments trouvés: ${elements.length}`,
+        undefined,
+        `${this.constructor.name}.getElements`,
       );
       return elements;
-    } catch (error) {
-      await logger.error(
-        `[getElements] Erreur lors de la récupération des éléments:`,
-        error,
-      );
-      throw error;
-    }
-  }
+    },
+    `${this.constructor.name}.getElements`,
+    false,
+  );
 
   /**
    * Crée un élément
    */
-  async createElement(
-    name: string,
-    type: "FRAME" | "COMPONENT",
-    parent: PageNode | FrameNode | ComponentNode,
-    properties?: Partial<FrameNode | ComponentNode>,
-    size?: { width: number; height: number },
-    lockAspectRatio?: boolean,
-  ): Promise<FrameNode | ComponentNode> {
-    try {
-      let element: FrameNode | ComponentNode;
+  createElement = catchError(
+    async (
+      name: string,
+      type: "FRAME" | "COMPONENT" | "TEXT",
+      parent: PageNode | FrameNode | ComponentNode,
+      properties?: Partial<FrameNode | ComponentNode | TextNode>,
+      size?: { width: number; height: number },
+      lockAspectRatio?: boolean,
+      gridChildPosition?: { row: number; column: number },
+      mode?: { collection: VariableCollection; modeId: string },
+      fontName?: FontName,
+    ): Promise<FrameNode | ComponentNode | TextNode> => {
+      let element: FrameNode | ComponentNode | TextNode;
       switch (type) {
         case "FRAME":
           element = figma.createFrame();
@@ -68,96 +71,143 @@ export class ElementBuilder {
         case "COMPONENT":
           element = figma.createComponent();
           break;
+        case "TEXT":
+          await loadFont({ family: "Inter", style: "Regular" });
+          element = figma.createText();
+          if (fontName) {
+            await loadFont({ family: fontName.family, style: fontName.style });
+          }
+          break;
         default:
-          throw new Error(`[createElement] Type d'élément inconnu: ${type}`);
+          throw new Error(`Type d'élément inconnu: ${type}`);
       }
 
       element.name = name;
-      if (
-        properties !== undefined ||
-        size !== undefined ||
-        lockAspectRatio !== undefined
-      )
-        await this.updateElement(
-          element,
-          parent,
-          properties,
-          size,
-          lockAspectRatio,
-        );
+      await this.updateElement(
+        element,
+        parent,
+        properties,
+        size,
+        lockAspectRatio,
+        gridChildPosition,
+        mode,
+      );
 
       return element;
-    } catch (error) {
-      await logger.error(
-        `[createElement] Erreur lors de la création de l'élément '${name}':`,
-        error,
-      );
-      throw error;
-    }
-  }
+    },
+    `${this.constructor.name}.createElement`,
+    false,
+  );
 
-  async updateElement(
-    element: FrameNode | ComponentNode | InstanceNode,
-    parent?: FrameNode | ComponentNode | PageNode,
-    properties?: Partial<FrameNode | ComponentNode | InstanceNode>,
-    size?: { width: number; height: number },
-    lockAspectRatio?: boolean,
-  ): Promise<FrameNode | ComponentNode | InstanceNode> {
-    try {
+  updateElement = catchError(
+    async (
+      element: FrameNode | ComponentNode | InstanceNode | TextNode,
+      parent?: FrameNode | ComponentNode | PageNode,
+      properties?: Partial<FrameNode | ComponentNode | InstanceNode | TextNode>,
+      size?: { width: number; height: number },
+      lockAspectRatio?: boolean,
+      gridChildPosition?: { row: number; column: number },
+      mode?: { collection: VariableCollection; modeId: string },
+    ): Promise<FrameNode | ComponentNode | InstanceNode | TextNode> => {
       if (parent !== undefined) parent.appendChild(element);
       if (size !== undefined && size.width && size.height)
         element.resize(size.width, size.height);
       if (lockAspectRatio) element.lockAspectRatio();
       if (properties !== undefined) Object.assign(element, properties);
+      if (gridChildPosition !== undefined) {
+        element.setGridChildPosition(
+          gridChildPosition.row,
+          gridChildPosition.column,
+        );
+      }
+      if (mode !== undefined) {
+        element.setExplicitVariableModeForCollection(
+          mode.collection,
+          mode.modeId,
+        );
+      }
       return element;
-    } catch (error) {
-      await logger.error(
-        `[updateElement] Erreur lors de la mise à jour de l'élément '${element.name}':`,
-        error,
-      );
-      throw error;
-    }
-  }
+    },
+    `${this.constructor.name}.updateElement`,
+    false,
+  );
 
-  async setParent(
-    element: SceneNode,
-    parent: FrameNode | ComponentNode | PageNode,
-  ): Promise<void> {
-    try {
+  setParent = catchError(
+    async (
+      element: SceneNode,
+      parent: FrameNode | ComponentNode | PageNode,
+    ): Promise<void> => {
       parent.appendChild(element);
-    } catch (error) {
-      await logger.error(
-        `[setParent] Erreur lors de la définition du parent de l'élément '${element.name}':`,
-        error,
+    },
+    `${this.constructor.name}.setParent`,
+    false,
+  );
+
+  async getOrCreateElement(
+    name: string,
+    type: "FRAME" | "COMPONENT" | "TEXT",
+    parent: PageNode | FrameNode | ComponentNode,
+    properties?: Partial<FrameNode | ComponentNode | TextNode>,
+    size?: { width: number; height: number },
+    lockAspectRatio?: boolean,
+    gridChildPosition?: { row: number; column: number },
+    mode?: { collection: VariableCollection; modeId: string },
+    fontName?: FontName,
+  ): Promise<FrameNode | ComponentNode | TextNode> {
+    let element = await this.getElement(name, parent);
+    if (!element) {
+      element = await this.createElement(
+        name,
+        type,
+        parent,
+        properties,
+        size,
+        lockAspectRatio,
+        gridChildPosition,
+        mode,
+        fontName,
       );
-      throw error;
     }
+    return element as FrameNode | ComponentNode | TextNode;
   }
 
   /**
    * Supprime un élément par son nom
    */
-  async removeElement(
-    name: string,
-    parent: PageNode | FrameNode,
-  ): Promise<void> {
-    try {
+  removeElement = catchError(
+    async (name: string, parent: PageNode | FrameNode): Promise<void> => {
       const element = await this.getElement(name, parent);
       if (!element) {
         await logger.warn(
-          `[removeElement] Impossible de supprimer l'élément '${name}': élément non trouvé.`,
+          `Impossible de supprimer l'élément '${name}': élément non trouvé.`,
+          undefined,
+          `${this.constructor.name}.removeElement`,
         );
         return;
       }
       element.remove();
-    } catch (error) {
-      await logger.error(
-        `[removeElement] Erreur lors de la suppression de l'élément '${name}':`,
-        error,
-      );
-      throw error;
-    }
-  }
+    },
+    `${this.constructor.name}.removeElement`,
+    false,
+  );
+
+  /**
+   * Distribue les éléments horizontalement avec un espacement donné
+   */
+  distributeElements = catchError(
+    async (
+      parent: FrameNode | PageNode,
+      spacing: number = 16,
+    ): Promise<void> => {
+      let currentX = 0;
+      for (const element of parent.children) {
+        element.x = currentX;
+        currentX += element.width + spacing;
+      }
+    },
+    `${this.constructor.name}.distributeElements`,
+    false,
+  );
 }
 
 export const elementBuilder = new ElementBuilder();

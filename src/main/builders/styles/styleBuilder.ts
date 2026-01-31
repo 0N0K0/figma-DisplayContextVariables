@@ -5,16 +5,19 @@
 import { TextStyleParams } from "../../types/stylesTypes";
 import { logger } from "../../utils/logger";
 import { loadFont } from "../../utils/typographyUtils";
+import { catchError } from "../../utils/errorUtils";
 
 export class StyleBuilder {
   /**
    * Obtient un style par son nom et son type
    */
-  private async getStyle(
-    name: string,
-    type: "effect" | "text" | "paint" | "grid",
-  ): Promise<PaintStyle | EffectStyle | TextStyle | GridStyle | undefined> {
-    try {
+  getStyle = catchError(
+    async (
+      name: string,
+      type: "effect" | "text" | "paint" | "grid",
+    ): Promise<
+      PaintStyle | EffectStyle | TextStyle | GridStyle | undefined
+    > => {
       let styles: ReadonlyArray<
         PaintStyle | EffectStyle | TextStyle | GridStyle
       >;
@@ -34,28 +37,61 @@ export class StyleBuilder {
       }
       const style = styles.find((s) => s.name === name);
       await logger.info(
-        `[getStyle] Style '${name}' de type '${type}' récupéré:`,
+        `Style '${name}' de type '${type}' récupéré:`,
         style,
+        `${this.constructor.name}.getStyle`,
       );
       return style;
-    } catch (error) {
-      await logger.error(
-        `[getStyle] Erreur lors de la récupération du style '${name}' de type '${type}':`,
-        error,
+    },
+    `${this.constructor.name}.getStyle`,
+    false,
+  );
+
+  /**
+   * Obtient tous les styles d'un type donné
+   */
+  getStyles = catchError(
+    async (
+      type: "effect" | "text" | "paint",
+    ): Promise<
+      ReadonlyArray<PaintStyle | EffectStyle | TextStyle | GridStyle>
+    > => {
+      let styles: ReadonlyArray<
+        PaintStyle | EffectStyle | TextStyle | GridStyle
+      >;
+      switch (type) {
+        case "paint":
+          styles = await figma.getLocalPaintStylesAsync();
+          break;
+        case "effect":
+          styles = await figma.getLocalEffectStylesAsync();
+          break;
+        case "text":
+          styles = await figma.getLocalTextStylesAsync();
+          break;
+      }
+      await logger.info(
+        `Styles de type '${type}' récupérés:`,
+        styles,
+        `${this.constructor.name}.getStyles`,
       );
-      throw error;
-    }
-  }
+      return styles;
+    },
+    `${this.constructor.name}.getStyles`,
+    false,
+  );
 
   /**
    * Crée un style Figma
    */
-  private async createStyle(
-    name: string,
-    type: "paint" | "text" | "effect",
-    params: Paint[] | TextStyleParams | Effect[],
-  ): Promise<PaintStyle | TextStyle | EffectStyle | GridStyle | undefined> {
-    try {
+  private createStyle = catchError(
+    async (
+      name: string,
+      type: "paint" | "text" | "effect",
+      params: Paint[] | TextStyleParams | Effect[],
+    ): Promise<
+      PaintStyle | TextStyle | EffectStyle | GridStyle | undefined
+    > => {
       let newStyle;
       switch (type) {
         case "paint":
@@ -75,75 +111,71 @@ export class StyleBuilder {
         params,
       );
       return newStyleWithValues;
-    } catch (error) {
-      await logger.error(
-        `[createStyle] Erreur lors de la création du style '${name}' de type '${type}':`,
-        error,
-      );
-      throw error;
-    }
-  }
+    },
+    `${this.constructor.name}.createStyle`,
+    false,
+  );
 
   /**
    * Crée ou met à jour un style Figma
    */
-  async createOrUpdateStyle(
-    name: string,
-    type: "paint" | "text" | "effect",
-    params: Paint[] | TextStyleParams | Effect[],
-  ): Promise<PaintStyle | TextStyle | EffectStyle | GridStyle | undefined> {
-    try {
+  createOrUpdateStyle = catchError(
+    async (
+      name: string,
+      type: "paint" | "text" | "effect",
+      params: Paint[] | TextStyleParams | Effect[],
+    ): Promise<
+      PaintStyle | TextStyle | EffectStyle | GridStyle | undefined
+    > => {
       let style = await this.getStyle(name, type);
       if (style) {
         return await this.updateStyle(name, type, params);
       }
       style = await this.createStyle(name, type, params);
       return style;
-    } catch (error) {
-      await logger.error(
-        `[createOrUpdateStyle] Erreur lors de la création ou mise à jour du style '${name}' de type '${type}':`,
-        error,
-      );
-      throw error;
-    }
-  }
+    },
+    `${this.constructor.name}.createOrUpdateStyle`,
+    false,
+  );
 
   /**
    * Met à jour un style Figma existant
    */
-  private async updateStyle(
-    name: string,
-    type: "paint" | "text" | "effect",
-    params: Paint[] | TextStyleParams | Effect[],
-  ): Promise<PaintStyle | TextStyle | EffectStyle | GridStyle | undefined> {
-    try {
+  private updateStyle = catchError(
+    async (
+      name: string,
+      type: "paint" | "text" | "effect",
+      params: Paint[] | TextStyleParams | Effect[],
+    ): Promise<
+      PaintStyle | TextStyle | EffectStyle | GridStyle | undefined
+    > => {
       let style = await this.getStyle(name, type);
       if (!style) {
         await logger.warn(
-          `[updateStyle] Le style '${name}' de type '${type}' n'existe pas.`,
+          `Le style '${name}' de type '${type}' n'existe pas.`,
+          undefined,
+          `${this.constructor.name}.updateStyle`,
         );
         return;
       }
       const updatedStyle = await this.setStyleValues(style, type, params);
       return updatedStyle;
-    } catch (error) {
-      await logger.error(
-        `[updateStyle] Erreur lors de la mise à jour du style '${name}' de type '${type}':`,
-        error,
-      );
-      throw error;
-    }
-  }
+    },
+    `${this.constructor.name}.updateStyle`,
+    false,
+  );
 
   /**
    * Définit les valeurs d'un style Figma
    */
-  private async setStyleValues(
-    style: PaintStyle | TextStyle | EffectStyle | GridStyle,
-    type: "paint" | "text" | "effect",
-    params: Paint[] | TextStyleParams | Effect[],
-  ): Promise<PaintStyle | TextStyle | EffectStyle | GridStyle | undefined> {
-    try {
+  private setStyleValues = catchError(
+    async (
+      style: PaintStyle | TextStyle | EffectStyle | GridStyle,
+      type: "paint" | "text" | "effect",
+      params: Paint[] | TextStyleParams | Effect[],
+    ): Promise<
+      PaintStyle | TextStyle | EffectStyle | GridStyle | undefined
+    > => {
       switch (type) {
         case "paint":
           (style as PaintStyle).paints = params as Paint[];
@@ -196,14 +228,10 @@ export class StyleBuilder {
           break;
       }
       return style;
-    } catch (error) {
-      await logger.error(
-        `[setStyleValues] Erreur lors de la définition des valeurs du style '${style.name}' de type '${type}':`,
-        error,
-      );
-      throw error;
-    }
-  }
+    },
+    `${this.constructor.name}.setStyleValues`,
+    false,
+  );
 }
 
 export const styleBuilder = new StyleBuilder();

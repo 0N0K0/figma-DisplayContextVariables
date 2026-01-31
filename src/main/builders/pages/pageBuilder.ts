@@ -1,89 +1,141 @@
 import { logger } from "../../utils/logger";
+import { catchError } from "../../utils/errorUtils";
 
 export class PageBuilder {
   /**
    * Obtient une page par son nom
    */
-  async getPage(name: string): Promise<PageNode | undefined> {
-    try {
+  getPage = catchError(
+    async (name: string): Promise<PageNode | undefined> => {
       const pages = await this.getPages();
       const page = pages.find((p) => p.name === name) as PageNode | undefined;
       if (!page) {
-        await logger.info(`[getPage] Page '${name}' non trouvée.`);
+        await logger.info(
+          `Page '${name}' non trouvée.`,
+          undefined,
+          "PageBuilder.getPage",
+        );
         return undefined;
       }
-      await logger.info(`[getPage] Page '${name}' trouvée.`);
-      return page;
-    } catch (error) {
-      await logger.error(
-        `[getPage] Erreur lors de la récupération de la page '${name}':`,
-        error,
+      await logger.info(
+        `Page '${name}' trouvée.`,
+        undefined,
+        "PageBuilder.getPage",
       );
-      throw error;
-    }
-  }
+      figma.currentPage = page;
+      return page;
+    },
+    `${this.constructor.name}.getPage`,
+    false,
+  );
 
   /**
    * Obtient toutes les pages
    */
-  async getPages(): Promise<PageNode[]> {
-    try {
+  getPages = catchError(
+    async (): Promise<PageNode[]> => {
       const pages = figma.root.children as PageNode[];
-      await logger.info(`[getPages] Nombre de pages trouvées: ${pages.length}`);
-      return pages;
-    } catch (error) {
-      await logger.error(
-        `[getPages] Erreur lors de la récupération des pages:`,
-        error,
+      await logger.info(
+        `Nombre de pages trouvées: ${pages.length}`,
+        undefined,
+        `${this.constructor.name}.getPages`,
       );
-      throw error;
-    }
-  }
+      return pages;
+    },
+    `${this.constructor.name}.getPages`,
+    false,
+  );
 
   /**
    * Crée une page
    */
-  async createPage(name: string): Promise<PageNode> {
-    try {
+  createPage = catchError(
+    async (name: string): Promise<PageNode> => {
       const page = figma.createPage();
       page.name = name;
+      figma.currentPage = page;
       return page;
-    } catch (error) {
-      await logger.error(
-        `[createPage] Erreur lors de la création de la page '${name}':`,
-        error,
-      );
-      throw error;
-    }
-  }
+    },
+    `${this.constructor.name}.createPage`,
+    false,
+  );
 
-  async getOrCreatePage(name: string): Promise<PageNode> {
-    let page = await this.getPage(name);
-    if (!page) {
-      page = await this.createPage(name);
-    }
-    return page;
-  }
+  /**
+   * Crée plusieurs pages
+   */
+  createPages = catchError(
+    async (names: string[]): Promise<PageNode[]> => {
+      const pages: PageNode[] = [];
+      for (const name of names) {
+        const page = await this.createPage(name);
+        pages.push(page);
+      }
+      return pages;
+    },
+    `${this.constructor.name}.createPages`,
+    false,
+  );
+
+  getOrCreatePage = catchError(
+    async (name: string): Promise<PageNode> => {
+      let page = await this.getPage(name);
+      if (!page) {
+        page = await this.createPage(name);
+      }
+      return page;
+    },
+    `${this.constructor.name}.getOrCreatePage`,
+    false,
+  );
+
+  setModes = catchError(
+    async (
+      page: PageNode,
+      modes: { collection: VariableCollection; modeId: string }[],
+    ): Promise<void> => {
+      for (const mode of modes) {
+        page.setExplicitVariableModeForCollection(mode.collection, mode.modeId);
+      }
+    },
+    `${this.constructor.name}.setModes`,
+    false,
+  );
 
   /**
    * Supprime une page par son nom
    */
-  async removePage(name: string): Promise<void> {
-    try {
+  removePage = catchError(
+    async (name: string): Promise<void> => {
       const page = await this.getPage(name);
       if (!page) {
         await logger.warn(
-          `[removePage] Impossible de supprimer la page '${name}': page non trouvée.`,
+          `Impossible de supprimer la page '${name}': page non trouvée.`,
+          undefined,
+          `${this.constructor.name}.removePage`,
         );
         return;
       }
       page.remove();
-    } catch (error) {
-      await logger.error(
-        `[removePage] Erreur lors de la suppression de la page '${name}':`,
-        error,
-      );
-      throw error;
+    },
+    `${this.constructor.name}.removePage`,
+    false,
+  );
+
+  /**
+   * Distribue les pages horizontalement avec un espacement fixe
+   */
+  distributePages() {
+    const gap = 80;
+
+    const nodes = figma.currentPage.children;
+    // Point de départ
+    let cursorX = nodes[0]?.x ?? 0;
+    const baseY = nodes[0]?.y ?? 0;
+
+    for (const node of nodes) {
+      node.x = cursorX;
+      node.y = baseY;
+      cursorX += node.width + gap;
     }
   }
 }
