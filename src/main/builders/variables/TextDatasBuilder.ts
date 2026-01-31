@@ -1,6 +1,5 @@
-import { VariableConfig } from "../../types/variablesTypes";
 import { variableBuilder } from "./variableBuilder";
-import datas from "../../assets/datas.json";
+import datasJson from "../../assets/datas.json";
 import { flatten } from "../../utils/dataUtils";
 import { logger } from "../../utils/logger";
 import { catchError } from "../../utils/errorUtils";
@@ -10,7 +9,7 @@ export const generateTextDatas = catchError(
   async (textDatas?: Record<string, string>[]): Promise<Variable[]> => {
     let datas: Record<string, string> = {};
     if (!textDatas || textDatas.length === 0) {
-      datas = flatten(datas);
+      datas = flatten(datasJson);
     } else {
       for (const obj of textDatas) {
         flatten(obj, "", datas);
