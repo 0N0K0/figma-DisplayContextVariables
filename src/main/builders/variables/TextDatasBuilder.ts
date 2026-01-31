@@ -8,34 +8,33 @@ import { SCOPES } from "../../constants/variablesConstants";
 
 export const generateTextDatas = catchError(
   async (textDatas?: Record<string, string>[]): Promise<Variable[]> => {
-    let merged: Record<string, string> = {};
+    let datas: Record<string, string> = {};
     if (!textDatas || textDatas.length === 0) {
-      merged = flatten(datas);
+      datas = flatten(datas);
     } else {
       for (const obj of textDatas) {
-        flatten(obj, "", merged);
+        flatten(obj, "", datas);
       }
     }
 
-    const variables: VariableConfig[] = [];
+    const variables: Variable[] = [];
 
-    for (const [name, value] of Object.entries(merged)) {
-      variables.push({
-        name: name.toLowerCase(),
-        collection: "Datas",
-        type: "STRING",
-        value: value,
-        scopes: [SCOPES.STRING.TEXT_CONTENT],
-      });
+    for (const [name, value] of Object.entries(datas)) {
+      variables.push(
+        await variableBuilder.createOrUpdateVariable({
+          name: name.toLowerCase(),
+          collection: "Datas",
+          type: "STRING",
+          value: value,
+          scopes: [SCOPES.STRING.TEXT_CONTENT],
+        }),
+      );
     }
 
-    const newVariables =
-      await variableBuilder.createOrUpdateVariables(variables);
-
     await logger.success(
-      `[generateTextDatas] ${newVariables.length} variables de données créées ou mises à jour avec succès.`,
+      `[generateTextDatas] ${variables.length} variables de données créées ou mises à jour avec succès.`,
     );
-    return newVariables;
+    return variables;
   },
   "TextDatasBuilder.generateTextDatas",
 );
