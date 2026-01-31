@@ -1,5 +1,5 @@
 import { clampChroma, converter, formatHex, wcagContrast } from "culori";
-import { SHADE_STEPS } from "../constants/colorConstants";
+import { SHADES } from "../constants/variablesConstants";
 
 export type Shade = { step: number; color: string };
 
@@ -13,7 +13,7 @@ export function generateShades(colorHex: string): Shade[] {
   const { l: baseL, c: baseC, h } = base;
   if (!h) return [];
 
-  return SHADE_STEPS.map((step) => {
+  return SHADES.map((step) => {
     if (step === 500) return { step, color: colorHex };
 
     const t = (step - 500) / 400; // -1 à 1
