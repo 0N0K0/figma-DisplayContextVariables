@@ -122,17 +122,17 @@ export const COLLECTIONS: Record<
     name: "Style\\Typography",
     variables: {
       core: {
-        body: FONT_STYLES,
-        subtitles: FONT_STYLES,
-        tech: FONT_STYLES,
+        body: {}, // filled dynamically
+        subtitles: {}, // filled dynamically
+        tech: {}, // filled dynamically
       },
       editorial: {
         heading: {}, // filled dynamically
-        accent: FONT_STYLES,
+        accent: {}, // filled dynamically
       },
       interface: {
-        heading: FONT_STYLES,
-        meta: FONT_STYLES,
+        heading: {}, // filled dynamically
+        meta: {}, // filled dynamically
       },
     },
   },
@@ -208,11 +208,81 @@ for (const [collectionKey, collectionValue] of Object.entries(COLLECTIONS)) {
     collectionKey === "typography" &&
     !Array.isArray(collectionValue.variables)
   ) {
-    for (const groupValue of Object.values(
-      collectionValue.variables.editorial.heading,
+    for (const [contextKey, contextValue] of Object.entries(
+      collectionValue.variables,
     )) {
-      for (const fontSize of SIZES) {
-        (groupValue as Record<string, any>)[fontSize] = FONT_STYLES;
+      for (const [roleKey, roleValue] of Object.entries(contextValue)) {
+        if (contextKey === "editorial" && roleKey === "heading") continue;
+        switch (roleKey) {
+          case "body":
+          case "subtitles":
+            (roleValue as Record<string, any>)["family"] = "Roboto";
+            break;
+          case "tech":
+            (roleValue as Record<string, any>)["family"] = "Roboto Mono";
+            break;
+          case "accent":
+            (roleValue as Record<string, any>)["family"] = "Parisienne";
+            break;
+          case "heading":
+          case "meta":
+            (roleValue as Record<string, any>)["family"] = "Roboto Condensed";
+            break;
+        }
+
+        switch (roleKey) {
+          case "body":
+            (roleValue as Record<string, any>)["style"] = "Light";
+            break;
+          case "subtitles":
+            (roleValue as Record<string, any>)["style"] = "Thin Italic";
+            break;
+          case "tech":
+          case "accent":
+            (roleValue as Record<string, any>)["style"] = "Regular";
+            break;
+          case "heading":
+            (roleValue as Record<string, any>)["style"] = "Black";
+            break;
+          case "meta":
+            (roleValue as Record<string, any>)["style"] = "Medium";
+            break;
+        }
+
+        if (roleKey === "heading" || roleKey === "tech") {
+          (roleValue as Record<string, any>)["letterSpacing"] = -5;
+        } else {
+          (roleValue as Record<string, any>)["letterSpacing"] = 0;
+        }
+      }
+    }
+    for (const fontSize of SIZES) {
+      collectionValue.variables.editorial.heading[fontSize] = {
+        family: "Roboto Condensed",
+        letterSpacing: 0,
+      };
+      switch (fontSize) {
+        case "xxl":
+          collectionValue.variables.editorial.heading[fontSize]["style"] =
+            "Black";
+          collectionValue.variables.editorial.heading[fontSize][
+            "letterSpacing"
+          ] = -5;
+          break;
+        case "xl":
+        case "lg":
+          collectionValue.variables.editorial.heading[fontSize]["style"] =
+            "ExtraLight";
+          break;
+        case "md":
+        case "sm":
+          collectionValue.variables.editorial.heading[fontSize]["style"] =
+            "Light";
+          break;
+        case "xs":
+          collectionValue.variables.editorial.heading[fontSize]["style"] =
+            "Regular";
+          break;
       }
     }
   } else if (
