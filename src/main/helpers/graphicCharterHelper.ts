@@ -7,6 +7,8 @@ import { styleBuilder } from "../builders/styles/styleBuilder";
 import { COLLECTIONS } from "../../common/constants/variablesConstants";
 
 class GraphicCharterHelper {
+  private className = "GraphicCharterHelper";
+
   generateFrame = catchError(
     async (
       name: string,
@@ -61,7 +63,7 @@ class GraphicCharterHelper {
       )) as FrameNode;
       return frame;
     },
-    `${this.constructor.name}.generateFrame`,
+    `${this.className}.generateFrame`,
     false,
   );
 
@@ -189,7 +191,7 @@ class GraphicCharterHelper {
         await this.generateText(colorValuesFrame, formatHsl(RGB), "body");
       }
     },
-    `${this.constructor.name}.generateColorFrame`,
+    `${this.className}.generateColorFrame`,
     false,
   );
 
@@ -241,7 +243,7 @@ class GraphicCharterHelper {
         textStyle.fontName as FontName,
       );
     },
-    `${this.constructor.name}.generateText`,
+    `${this.className}.generateText`,
     false,
   );
 }

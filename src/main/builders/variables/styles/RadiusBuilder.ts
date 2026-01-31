@@ -43,6 +43,9 @@ export const generateRadius = catchError(
       undefined,
       "RadiusBuilder.generateRadius",
     );
+    figma.notify(
+      `✅ ${variables.length} variables de radius créées ou mises à jour avec succès.`,
+    );
     return variables;
   },
   "RadiusBuilder.generateRadius",

@@ -9,6 +9,8 @@ import { logger } from "../../utils/logger";
 import { catchError } from "../../utils/errorUtils";
 
 export class VariableBuilder {
+  private className = "VariableBuilder";
+
   /**
    * Obtient une collection de variables par nom
    */
@@ -21,12 +23,12 @@ export class VariableBuilder {
         await logger.info(
           `Collection '${name}' introuvable.`,
           undefined,
-          `${this.constructor.name}.getCollection`,
+          `${this.className}.getCollection`,
         );
       }
       return collection;
     },
-    `${this.constructor.name}.getCollection`,
+    `${this.className}.getCollection`,
     false,
   );
 
@@ -42,7 +44,7 @@ export class VariableBuilder {
 
       return collection;
     },
-    `${this.constructor.name}.createCollection`,
+    `${this.className}.createCollection`,
     false,
   );
 
@@ -80,7 +82,7 @@ export class VariableBuilder {
         await logger.info(
           `Aucun mode trouvé dans la collection '${collectionName}'.`,
           undefined,
-          `${this.constructor.name}.getModesFromCollection`,
+          `${this.className}.getModesFromCollection`,
         );
 
         return [];
@@ -88,7 +90,7 @@ export class VariableBuilder {
 
       return collection.modes;
     },
-    `${this.constructor.name}.getModesFromCollection`,
+    `${this.className}.getModesFromCollection`,
     false,
   );
 
@@ -109,7 +111,7 @@ export class VariableBuilder {
         await logger.info(
           `Mode '${modeName}' introuvable dans la collection '${collectionName}'.`,
           undefined,
-          `${this.constructor.name}.getModeFromCollection`,
+          `${this.className}.getModeFromCollection`,
         );
         return { mode: null, collection };
       }
@@ -118,7 +120,7 @@ export class VariableBuilder {
         collection,
       };
     },
-    `${this.constructor.name}.getModeFromCollection`,
+    `${this.className}.getModeFromCollection`,
     false,
   );
 
@@ -126,7 +128,7 @@ export class VariableBuilder {
     async (variable: Variable): Promise<string> => {
       return Object.keys(variable.valuesByMode)[0];
     },
-    `${this.constructor.name}.getFirstMode`,
+    `${this.className}.getFirstMode`,
     false,
   );
 
@@ -141,7 +143,7 @@ export class VariableBuilder {
         await this.removeModeFromCollection(collectionName, "Mode 1");
       return modeId;
     },
-    `${this.constructor.name}.addModeToCollection`,
+    `${this.className}.addModeToCollection`,
     false,
   );
 
@@ -172,13 +174,13 @@ export class VariableBuilder {
         await logger.info(
           `Impossible de supprimer le mode '${modeName}': mode non trouvé dans la collection '${collectionName}'.`,
           undefined,
-          `${this.constructor.name}.removeModeFromCollection`,
+          `${this.className}.removeModeFromCollection`,
         );
         return;
       }
       collection.removeMode(mode.modeId);
     },
-    `${this.constructor.name}.removeModeFromCollection`,
+    `${this.className}.removeModeFromCollection`,
     false,
   );
 
@@ -196,13 +198,13 @@ export class VariableBuilder {
         await logger.info(
           `Variable '${variableName}' introuvable dans la collection '${collectionName}'.`,
           undefined,
-          `${this.constructor.name}.findVariable`,
+          `${this.className}.findVariable`,
         );
         return;
       }
       return variable;
     },
-    `${this.constructor.name}.findVariable`,
+    `${this.className}.findVariable`,
     false,
   );
 
@@ -234,13 +236,13 @@ export class VariableBuilder {
         await logger.info(
           `Aucune variable trouvée dans la collection '${collectionName}'.`,
           undefined,
-          `${this.constructor.name}.getCollectionVariables`,
+          `${this.className}.getCollectionVariables`,
         );
         return [];
       }
       return variables;
     },
-    `${this.constructor.name}.getCollectionVariables`,
+    `${this.className}.getCollectionVariables`,
     false,
   );
 
@@ -264,7 +266,7 @@ export class VariableBuilder {
       await logger.info(
         `Aucune variable trouvée dans le groupe '${groupName}' de la collection '${collectionName}'.`,
         undefined,
-        `${this.constructor.name}.getCollectionVariablesByGroup`,
+        `${this.className}.getCollectionVariablesByGroup`,
       );
 
       return [];
@@ -287,7 +289,7 @@ export class VariableBuilder {
       }
       return variable.valuesByMode[await this.getFirstMode(variable)];
     },
-    `${this.constructor.name}.getVariableValueForMode`,
+    `${this.className}.getVariableValueForMode`,
     false,
   );
 
@@ -324,7 +326,7 @@ export class VariableBuilder {
 
       return variable;
     },
-    `${this.constructor.name}.createVariable`,
+    `${this.className}.createVariable`,
     false,
   );
 
@@ -362,7 +364,7 @@ export class VariableBuilder {
       await logger.warn(
         `Les variables de type BOOLEAN ne peuvent pas avoir de scopes. La variable '${variable.name}' ne sera pas modifiée.`,
         undefined,
-        `${this.constructor.name}.setVariableScopes`,
+        `${this.className}.setVariableScopes`,
       );
       return;
     }
@@ -393,7 +395,7 @@ export class VariableBuilder {
         await logger.info(
           `La variable '${config.name}' n'existe pas dans la collection '${config.collection}'. Elle sera créée.`,
           undefined,
-          `${this.constructor.name}.createOrUpdateVariable`,
+          `${this.className}.createOrUpdateVariable`,
         );
         const newVariable = await this.createVariable(config as VariableConfig);
         return newVariable;
@@ -403,7 +405,7 @@ export class VariableBuilder {
         await logger.warn(
           `Le type de la variable '${config.name}' ne peut pas être modifié de '${variable.resolvedType}' à '${config.type}'. La variable sera recréée.`,
           undefined,
-          `${this.constructor.name}.createOrUpdateVariable`,
+          `${this.className}.createOrUpdateVariable`,
         );
         await this.deleteVariable(config.collection, config.name);
         const newVariable = await this.createVariable(config as VariableConfig);
@@ -445,7 +447,7 @@ export class VariableBuilder {
 
       return variable;
     },
-    `${this.constructor.name}.createOrUpdateVariable`,
+    `${this.className}.createOrUpdateVariable`,
     false,
   );
 
@@ -473,13 +475,13 @@ export class VariableBuilder {
         await logger.info(
           `Impossible de supprimer la variable '${variableName}': variable non trouvée dans la collection '${collectionName}'.`,
           undefined,
-          `${this.constructor.name}.deleteVariable`,
+          `${this.className}.deleteVariable`,
         );
         return;
       }
       variable.remove();
     },
-    `${this.constructor.name}.deleteVariable`,
+    `${this.className}.deleteVariable`,
     false,
   );
 }

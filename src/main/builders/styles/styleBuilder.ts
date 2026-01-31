@@ -8,6 +8,8 @@ import { loadFont } from "../../utils/typographyUtils";
 import { catchError } from "../../utils/errorUtils";
 
 export class StyleBuilder {
+  private className = "StyleBuilder";
+
   /**
    * Obtient un style par son nom et son type
    */
@@ -39,11 +41,11 @@ export class StyleBuilder {
       await logger.info(
         `Style '${name}' de type '${type}' récupéré:`,
         style,
-        `${this.constructor.name}.getStyle`,
+        `${this.className}.getStyle`,
       );
       return style;
     },
-    `${this.constructor.name}.getStyle`,
+    `${this.className}.getStyle`,
     false,
   );
 
@@ -73,11 +75,11 @@ export class StyleBuilder {
       await logger.info(
         `Styles de type '${type}' récupérés:`,
         styles,
-        `${this.constructor.name}.getStyles`,
+        `${this.className}.getStyles`,
       );
       return styles;
     },
-    `${this.constructor.name}.getStyles`,
+    `${this.className}.getStyles`,
     false,
   );
 
@@ -112,7 +114,7 @@ export class StyleBuilder {
       );
       return newStyleWithValues;
     },
-    `${this.constructor.name}.createStyle`,
+    `${this.className}.createStyle`,
     false,
   );
 
@@ -134,7 +136,7 @@ export class StyleBuilder {
       style = await this.createStyle(name, type, params);
       return style;
     },
-    `${this.constructor.name}.createOrUpdateStyle`,
+    `${this.className}.createOrUpdateStyle`,
     false,
   );
 
@@ -154,14 +156,14 @@ export class StyleBuilder {
         await logger.warn(
           `Le style '${name}' de type '${type}' n'existe pas.`,
           undefined,
-          `${this.constructor.name}.updateStyle`,
+          `${this.className}.updateStyle`,
         );
         return;
       }
       const updatedStyle = await this.setStyleValues(style, type, params);
       return updatedStyle;
     },
-    `${this.constructor.name}.updateStyle`,
+    `${this.className}.updateStyle`,
     false,
   );
 
@@ -229,7 +231,7 @@ export class StyleBuilder {
       }
       return style;
     },
-    `${this.constructor.name}.setStyleValues`,
+    `${this.className}.setStyleValues`,
     false,
   );
 }

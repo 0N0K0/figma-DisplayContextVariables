@@ -3,6 +3,8 @@ import { COLLECTIONS } from "../../common/constants/variablesConstants";
 import { catchError } from "../utils/errorUtils";
 
 class ThemesHelper {
+  private className = "ThemesHelper";
+
   getTargetValue = catchError(
     async (
       targetVariableName: string,
@@ -30,7 +32,7 @@ class ThemesHelper {
         targetVariable,
       };
     },
-    `${this.constructor.name}.getTargetValue`,
+    `${this.className}.getTargetValue`,
     false,
   );
 
@@ -59,7 +61,7 @@ class ThemesHelper {
         targetValue,
       };
     },
-    `${this.constructor.name}.getTargetColor`,
+    `${this.className}.getTargetColor`,
     false,
   );
 
@@ -86,7 +88,7 @@ class ThemesHelper {
         targetValue,
       };
     },
-    `${this.constructor.name}.getTargetNeutralColor`,
+    `${this.className}.getTargetNeutralColor`,
     false,
   );
 }

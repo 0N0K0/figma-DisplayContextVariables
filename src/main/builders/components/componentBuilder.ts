@@ -1,6 +1,8 @@
 import { catchError } from "../../utils/errorUtils";
 
 export class ComponentBuilder {
+  private className = "ComponentBuilder";
+
   /**
    * Crée un jeu de composants
    */
@@ -23,7 +25,7 @@ export class ComponentBuilder {
       }
       return componentSet;
     },
-    `${this.constructor.name}.createElement`,
+    `${this.className}.createElement`,
     false,
   );
 
@@ -51,7 +53,7 @@ export class ComponentBuilder {
         );
       return instance;
     },
-    `${this.constructor.name}.createInstance`,
+    `${this.className}.createInstance`,
     false,
   );
 }

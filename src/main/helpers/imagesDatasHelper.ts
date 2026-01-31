@@ -4,6 +4,8 @@ import { logger } from "../utils/logger";
 import { catchError } from "../utils/errorUtils";
 
 class ImagesDatasHelper {
+  private className = "ImagesDatasHelper";
+
   createPages = catchError(
     async (
       pagesNames: string[],
@@ -13,7 +15,7 @@ class ImagesDatasHelper {
       await logger.info(
         `Création ou récupération des pages pour le composant ${componentSetName}...`,
         undefined,
-        `${this.constructor.name}.createPages`,
+        `${this.className}.createPages`,
       );
 
       let targetPage: PageNode;
@@ -24,11 +26,11 @@ class ImagesDatasHelper {
       await logger.success(
         `Pages pour le composant ${componentSetName} créées ou récupérées avec succès.`,
         undefined,
-        `${this.constructor.name}.createPages`,
+        `${this.className}.createPages`,
       );
       return targetPage!;
     },
-    `${this.constructor.name}.createPages`,
+    `${this.className}.createPages`,
     false,
   );
 
@@ -65,10 +67,10 @@ class ImagesDatasHelper {
       await logger.success(
         `Jeu de composants <${componentName}> créé avec succès.`,
         undefined,
-        `${this.constructor.name}.createComponentSet`,
+        `${this.className}.createComponentSet`,
       );
     },
-    `${this.constructor.name}.createComponentSet`,
+    `${this.className}.createComponentSet`,
     false,
   );
 
@@ -86,7 +88,7 @@ class ImagesDatasHelper {
       }
       return { newWidth, newHeight };
     },
-    `${this.constructor.name}.generateWidthHeight`,
+    `${this.className}.generateWidthHeight`,
     false,
   );
 }

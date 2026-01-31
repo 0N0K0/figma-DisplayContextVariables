@@ -31,7 +31,12 @@ export const generateTextDatas = catchError(
     }
 
     await logger.success(
-      `[generateTextDatas] ${variables.length} variables de données créées ou mises à jour avec succès.`,
+      `${variables.length} variables de données créées ou mises à jour avec succès.`,
+      false,
+      "TextDatasBuilder.generateTextDatas",
+    );
+    figma.notify(
+      `✅ ${variables.length} variables de données créées ou mises à jour avec succès.`,
     );
     return variables;
   },

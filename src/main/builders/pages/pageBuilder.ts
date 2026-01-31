@@ -2,6 +2,8 @@ import { logger } from "../../utils/logger";
 import { catchError } from "../../utils/errorUtils";
 
 export class PageBuilder {
+  private className = "PageBuilder";
+
   /**
    * Obtient une page par son nom
    */
@@ -13,19 +15,19 @@ export class PageBuilder {
         await logger.info(
           `Page '${name}' non trouvée.`,
           undefined,
-          "PageBuilder.getPage",
+          `${this.className}.getPage`,
         );
         return undefined;
       }
       await logger.info(
         `Page '${name}' trouvée.`,
         undefined,
-        "PageBuilder.getPage",
+        `${this.className}.getPage`,
       );
       figma.currentPage = page;
       return page;
     },
-    `${this.constructor.name}.getPage`,
+    `${this.className}.getPage`,
     false,
   );
 
@@ -38,11 +40,11 @@ export class PageBuilder {
       await logger.info(
         `Nombre de pages trouvées: ${pages.length}`,
         undefined,
-        `${this.constructor.name}.getPages`,
+        `${this.className}.getPages`,
       );
       return pages;
     },
-    `${this.constructor.name}.getPages`,
+    `${this.className}.getPages`,
     false,
   );
 
@@ -56,7 +58,7 @@ export class PageBuilder {
       figma.currentPage = page;
       return page;
     },
-    `${this.constructor.name}.createPage`,
+    `${this.className}.createPage`,
     false,
   );
 
@@ -72,7 +74,7 @@ export class PageBuilder {
       }
       return pages;
     },
-    `${this.constructor.name}.createPages`,
+    `${this.className}.createPages`,
     false,
   );
 
@@ -84,7 +86,7 @@ export class PageBuilder {
       }
       return page;
     },
-    `${this.constructor.name}.getOrCreatePage`,
+    `${this.className}.getOrCreatePage`,
     false,
   );
 
@@ -97,7 +99,7 @@ export class PageBuilder {
         page.setExplicitVariableModeForCollection(mode.collection, mode.modeId);
       }
     },
-    `${this.constructor.name}.setModes`,
+    `${this.className}.setModes`,
     false,
   );
 
@@ -111,13 +113,13 @@ export class PageBuilder {
         await logger.warn(
           `Impossible de supprimer la page '${name}': page non trouvée.`,
           undefined,
-          `${this.constructor.name}.removePage`,
+          `${this.className}.removePage`,
         );
         return;
       }
       page.remove();
     },
-    `${this.constructor.name}.removePage`,
+    `${this.className}.removePage`,
     false,
   );
 

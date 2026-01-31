@@ -3,6 +3,8 @@ import { catchError } from "../../utils/errorUtils";
 import { loadFont } from "../../utils/typographyUtils";
 
 export class ElementBuilder {
+  private className = "ElementBuilder";
+
   /**
    * Obtient un élément par son nom
    */
@@ -19,13 +21,13 @@ export class ElementBuilder {
         await logger.info(
           `Element '${name}' non trouvé.`,
           undefined,
-          `${this.constructor.name}.getElement`,
+          `${this.className}.getElement`,
         );
         return undefined;
       }
       return element;
     },
-    `${this.constructor.name}.getElement`,
+    `${this.className}.getElement`,
     false,
   );
 
@@ -40,11 +42,11 @@ export class ElementBuilder {
       await logger.info(
         `Nombre d'éléments trouvés: ${elements.length}`,
         undefined,
-        `${this.constructor.name}.getElements`,
+        `${this.className}.getElements`,
       );
       return elements;
     },
-    `${this.constructor.name}.getElements`,
+    `${this.className}.getElements`,
     false,
   );
 
@@ -95,7 +97,7 @@ export class ElementBuilder {
 
       return element;
     },
-    `${this.constructor.name}.createElement`,
+    `${this.className}.createElement`,
     false,
   );
 
@@ -128,7 +130,7 @@ export class ElementBuilder {
       }
       return element;
     },
-    `${this.constructor.name}.updateElement`,
+    `${this.className}.updateElement`,
     false,
   );
 
@@ -139,7 +141,7 @@ export class ElementBuilder {
     ): Promise<void> => {
       parent.appendChild(element);
     },
-    `${this.constructor.name}.setParent`,
+    `${this.className}.setParent`,
     false,
   );
 
@@ -181,13 +183,13 @@ export class ElementBuilder {
         await logger.warn(
           `Impossible de supprimer l'élément '${name}': élément non trouvé.`,
           undefined,
-          `${this.constructor.name}.removeElement`,
+          `${this.className}.removeElement`,
         );
         return;
       }
       element.remove();
     },
-    `${this.constructor.name}.removeElement`,
+    `${this.className}.removeElement`,
     false,
   );
 
@@ -205,7 +207,7 @@ export class ElementBuilder {
         currentX += element.width + spacing;
       }
     },
-    `${this.constructor.name}.distributeElements`,
+    `${this.className}.distributeElements`,
     false,
   );
 }
