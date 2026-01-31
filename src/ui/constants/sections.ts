@@ -9,6 +9,7 @@ import {
 } from "../../common/utils/colorUtils";
 import type { SectionConfig, TabConfig, InputConfig } from "../types";
 import { toCamelCase, toKebabCase } from "../../common/utils/textUtils";
+import { COLLECTIONS } from "../../main/constants/variablesConstants";
 
 // Générer les options d'opacité avec color indicators
 const neutralOpacityOptions = OPACITIES_STEPS.map((opacity) => {
@@ -279,14 +280,26 @@ export const TABS: TabConfig[] = [
     sections: [
       {
         inputs: [
-          numInput("radiusXS", "xs", 2),
-          numInput("radiusSM", "sm", 4),
-          numInput("radiusMD", "md", 8),
-          numInput("radiusLG", "lg", 16),
-          numInput("radiusXL", "xl", 24),
-          numInput("radius2XL", "2xl", 32),
+          ...(
+            COLLECTIONS.radius.variables as {
+              name: string;
+              default: number;
+            }[]
+          )
+            .filter(
+              (radius) => radius.name !== "rounded" && radius.name !== "square",
+            )
+            .map((radius) =>
+              numInput(
+                `radius${radius.name}`,
+                radius.name,
+                radius.default,
+                0,
+                9999,
+              ),
+            ),
           btn("Generate Radius"),
-        ],
+        ] as InputConfig[],
       },
     ],
   },

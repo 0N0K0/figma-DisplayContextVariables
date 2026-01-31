@@ -1,51 +1,48 @@
-import { SCOPES } from "../../../constants/variablesConstants";
-import { VariableConfig } from "../../../types/variablesTypes";
+import { COLLECTIONS, SCOPES } from "../../../constants/variablesConstants";
 import { logger } from "../../../utils/logger";
 import { variableBuilder } from "../variableBuilder";
+import { catchError } from "../../../utils/errorUtils";
 
-export async function generateRadius(
-  radius: Record<string, number>,
-): Promise<Variable[]> {
-  try {
-    const variables: VariableConfig[] = [];
-    const radiusConfig: { name: string; value: number }[] = [];
+export const generateRadius = catchError(
+  async (radius: Record<string, number>): Promise<Variable[]> => {
+    logger.debug(
+      "@param radius Record<string, number>:",
+      radius,
+      "RadiusBuilder.generateRadius",
+    );
+    const variables: Variable[] = [];
 
-    radiusConfig.push({ name: "square", value: 0 });
-    for (const [name, value] of Object.entries(radius)) {
-      radiusConfig.push({
-        name: name.toLowerCase(),
-        value,
-      });
+    for (const variable of COLLECTIONS.radius.variables as {
+      name: string;
+      default: number;
+    }[]) {
+      variables.push(
+        await variableBuilder.createOrUpdateVariable({
+          name: variable.name,
+          collection: COLLECTIONS.radius.name,
+          type: "FLOAT",
+          value: radius[variable.name]
+            ? radius[variable.name]
+            : variable.default,
+          scopes: [SCOPES.FLOAT.CORNER_RADIUS],
+        }),
+      );
     }
-    radiusConfig.push({ name: "rounded", value: 9999 });
 
-    for (const { name, value } of radiusConfig) {
-      variables.push({
-        name,
-        collection: "Style\\Radius",
-        type: "FLOAT",
-        value,
-        scopes: [SCOPES.FLOAT.CORNER_RADIUS],
-      });
-    }
-
-    const newVariables =
-      await variableBuilder.createOrUpdateVariables(variables);
-    if (newVariables.length === 0) {
+    if (variables.length === 0) {
       await logger.error(
-        "[generateRadius] Aucune variable de radius créée ou mise à jour.",
+        "Aucune variable de radius créée ou mise à jour.",
+        undefined,
+        "RadiusBuilder.generateRadius",
       );
       throw new Error("Aucune variable de radius créée ou mise à jour.");
     }
     await logger.success(
-      `[generateRadius] ${newVariables.length} variables de radius créées ou mises à jour avec succès.`,
+      `${variables.length} variables de radius créées ou mises à jour avec succès.`,
+      undefined,
+      "RadiusBuilder.generateRadius",
     );
-    return newVariables;
-  } catch (error) {
-    await logger.error(
-      "[generateRadius] Erreur lors de la génération des variables de radius:",
-      error,
-    );
-    throw error;
-  }
-}
+    return variables;
+  },
+  "RadiusBuilder.generateRadius",
+);

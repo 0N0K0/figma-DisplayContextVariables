@@ -6,7 +6,7 @@ import {
 import { FormData, getFormData } from "../utils/formData";
 import { debugPanel } from "../components/debugPanel";
 import { layoutGuide } from "../../common/types";
-import { stringify } from "querystring";
+import { COLLECTIONS } from "../../main/constants/variablesConstants";
 
 // List of button IDs corresponding to different actions
 const btns = [
@@ -157,8 +157,11 @@ export function attachButtonListeners() {
 
         // Handle Radius
         const radius: Record<string, string> = {};
-        for (const key of ["XS", "SM", "MD", "LG", "XL", "2XL"]) {
-          radius[key] = formData[`radius${key}`] as string;
+        for (const variable of COLLECTIONS.radius.variables as {
+          name: string;
+          default: number;
+        }[]) {
+          radius[variable.name] = formData[`radius${variable.name}`] as string;
         }
 
         // Handle Typography
