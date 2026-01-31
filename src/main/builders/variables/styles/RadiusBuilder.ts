@@ -1,7 +1,8 @@
-import { COLLECTIONS, SCOPES } from "../../../constants/variablesConstants";
+import { COLLECTIONS } from "../../../../common/constants/variablesConstants";
 import { logger } from "../../../utils/logger";
 import { variableBuilder } from "../variableBuilder";
 import { catchError } from "../../../utils/errorUtils";
+import { SCOPES } from "../../../constants/variablesConstants";
 
 export const generateRadius = catchError(
   async (radius: Record<string, number>): Promise<Variable[]> => {
