@@ -21,7 +21,6 @@ import {
   generateDevices,
   generateFontSizes,
 } from "./builders/variables/DisplayContextBuilder";
-import { logger } from "./utils/logger";
 import { generateTypography } from "./builders/variables/styles/TypographyBuilder";
 import { generateTextDatas } from "./builders/variables/TextDatasBuilder";
 import {
@@ -60,17 +59,8 @@ figma.ui.onmessage = async (msg) => {
       msg.type === "generateAll"
     ) {
       const colors = msg.datas?.colorsData?.[key];
-      if (!colors) {
-        figma.notify(`⚠️ Aucune couleur de ${toPascalCase(key)} fournie`, {
-          error: true,
-        });
-        return;
-      }
       await generateColorPalette(colors, toPascalCase(key));
       if (key === "brand") await generateGradients(colors);
-      figma.notify(
-        `✅ Palette de couleurs de ${toPascalCase(key)} générée avec succès`,
-      );
     }
   }
   if (
@@ -80,7 +70,6 @@ figma.ui.onmessage = async (msg) => {
   ) {
     const greyHue = msg.datas?.neutralColors?.greyHue;
     await generateNeutralPalette(greyHue ?? "");
-    figma.notify("✅ Palette de couleurs Neutral générée avec succès");
   }
 
   if (
@@ -94,28 +83,15 @@ figma.ui.onmessage = async (msg) => {
     for (const key of colorFamilies) {
       const coreThemes = msg.datas?.[`${key}CoreThemes`];
       const colors = msg.datas?.colorsData?.[key];
-      if (coreThemes && colors && themes && greyHue) {
-        await generateColorThemes(
-          coreThemes,
-          themes,
-          toPascalCase(key),
-          greyHue,
-        );
-        await generateColorsThemesCollections(
-          coreThemes,
-          themes,
-          toPascalCase(key),
-          colors,
-        );
-        figma.notify(
-          `✅ Thèmes de couleurs de ${toPascalCase(key)} générés avec succès`,
-        );
-      }
+      await generateColorThemes(coreThemes, themes, toPascalCase(key), greyHue);
+      await generateColorsThemesCollections(
+        coreThemes,
+        themes,
+        toPascalCase(key),
+        colors,
+      );
     }
-    if (neutralColors) {
-      await generateNeutralThemes(neutralColors);
-      figma.notify(`✅ Thèmes de couleurs Neutral générés avec succès`);
-    }
+    await generateNeutralThemes(neutralColors);
   }
 
   if (
@@ -126,7 +102,6 @@ figma.ui.onmessage = async (msg) => {
     await generateGraphicCharterGradients();
     await generateGraphicCharterColors("Feedback");
     await generateGraphicCharterNeutral();
-    figma.notify(`✅ Charte graphique couleurs générée avec succès`);
   }
 
   if (msg.type === "generateLayoutGuide" || msg.type === "generateAll") {
@@ -141,24 +116,16 @@ figma.ui.onmessage = async (msg) => {
       await generateDensities(layoutGuide);
       await generateContentHeights(layoutGuide);
       await generateDevices(layoutGuide);
-      figma.notify("✅ Guide de mise en page généré avec succès");
     }
   }
 
   if (msg.type === "generateViewportsPages" || msg.type === "generateAll") {
     await generateViewportsPages();
-    figma.notify("✅ Pages de présentations générées avec succès");
   }
 
   if (msg.type === "generateRadius" || msg.type === "generateAll") {
     const radius = msg.datas?.radius;
-    if (radius === undefined) {
-      figma.notify("⚠️ Aucune donnée de radius fournie", { error: true });
-      return;
-    } else {
-      await generateRadius(radius);
-      figma.notify("✅ Radius générés avec succès");
-    }
+    await generateRadius(radius);
   }
 
   if (
@@ -167,15 +134,7 @@ figma.ui.onmessage = async (msg) => {
     msg.type === "generateAll"
   ) {
     const baseFontSize = msg.datas?.baseFontSize;
-    if (baseFontSize === undefined) {
-      figma.notify("⚠️ Aucune donnée de tailles de police fournie", {
-        error: true,
-      });
-      return;
-    } else {
-      await generateFontSizes(baseFontSize);
-      figma.notify("✅ Tailles de police générées avec succès");
-    }
+    await generateFontSizes(baseFontSize);
   }
 
   if (
@@ -186,16 +145,8 @@ figma.ui.onmessage = async (msg) => {
     const fontStyles = msg.datas?.fontStyles;
     const baseFontSize = msg.datas?.baseFontSize;
     const lineGrid = msg.datas?.lineGrid;
-    if (fontStyles === undefined) {
-      figma.notify("⚠️ Aucune donnée de styles de typographie fournie", {
-        error: true,
-      });
-      return;
-    } else {
-      await generateTypography(fontStyles);
-      await generateTypographyStyles(fontStyles, baseFontSize, lineGrid);
-      figma.notify("✅ Styles de typographie générées avec succès");
-    }
+    await generateTypography(fontStyles);
+    await generateTypographyStyles(fontStyles, baseFontSize, lineGrid);
   }
 
   if (
@@ -203,7 +154,6 @@ figma.ui.onmessage = async (msg) => {
     msg.type === "generateAll"
   ) {
     await generateGraphicCharterTypography();
-    figma.notify(`✅ Charte graphique typographie générée avec succès`);
   }
 
   if (
@@ -211,20 +161,8 @@ figma.ui.onmessage = async (msg) => {
     msg.type === "generateDatas" ||
     msg.type === "generateAll"
   ) {
-    await logger.info(
-      "Received generateTextDatas message:",
-      msg.datas?.textDatasList,
-    );
     const textDatas = msg.datas?.textDatasList;
-    if (textDatas === undefined) {
-      figma.notify(
-        "⚠️ Aucune donnée de textes fournie, des données par défaut seront utilisées",
-      );
-      await generateTextDatas();
-    } else {
-      await generateTextDatas(textDatas);
-      figma.notify("✅ Textes générés avec succès");
-    }
+    await generateTextDatas(textDatas);
   }
 
   if (
@@ -235,23 +173,13 @@ figma.ui.onmessage = async (msg) => {
     const imagesDatas = msg.datas?.imagesDatasList;
     const radiusDatas = msg.datas?.radius;
     const layoutGuide = msg.datas?.layoutGuide;
-
-    if (imagesDatas === undefined) {
-      figma.notify("⚠️ Aucune donnée d'images fournie fournie", {
-        error: true,
-      });
-      return;
-    } else {
-      await generateImagesDatas(imagesDatas, layoutGuide);
-      await generateMediaInstance(layoutGuide);
-      await generateMedia(radiusDatas, layoutGuide);
-      await generateGallery(layoutGuide);
-      figma.notify("✅ Images générées avec succès");
-    }
+    await generateImagesDatas(imagesDatas, layoutGuide);
+    await generateMediaInstance(layoutGuide);
+    await generateMedia(radiusDatas, layoutGuide);
+    await generateGallery(layoutGuide);
   }
 
   if (msg.type === "generateElevationsEffects" || msg.type === "generateAll") {
     generateElevationEffects();
-    figma.notify("✅ Élévations générées avec succès");
   }
 };
