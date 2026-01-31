@@ -2,12 +2,7 @@
  * Debug Panel pour afficher les logs
  */
 
-export interface LogMessage {
-  timestamp: number;
-  level: "info" | "success" | "warn" | "error" | "debug";
-  message: string;
-  data?: any;
-}
+import { LogMessage } from "../../common/types/loggerTypes";
 
 export class DebugPanel {
   private logs: LogMessage[] = [];
@@ -118,7 +113,7 @@ export class DebugPanel {
         logElement.className = `debug-log-entry debug-log-${log.level}`;
         const timestamp = new Date(log.timestamp).toLocaleTimeString();
         const icon = this.getIconForLevel(log.level);
-        let content = `<div class="debug-log-time">${timestamp}</div> <div class="debug-log-message"><span class="debug-log-icon">${icon}</span> <span>${this.escapeHtml(log.message)}</span></div>`;
+        let content = `<div class="debug-log-time">${timestamp}</div> <div class="debug-log-message-container"><span class="debug-log-icon">${icon}</span> <div class="debug-log-message"><span>${this.escapeHtml(log.context ? `[${log.context}]` : "")}</span><span>${this.escapeHtml(log.message)}</span><div class="debug-log-message-container"></div>`;
         if (log.data !== undefined) {
           content += `<pre class="debug-log-data">${this.escapeHtml(JSON.stringify(log.data, null, 2))}</pre>`;
         }

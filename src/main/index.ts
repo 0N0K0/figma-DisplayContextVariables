@@ -66,22 +66,11 @@ figma.ui.onmessage = async (msg) => {
         });
         return;
       }
-      try {
-        await generateColorPalette(colors, toPascalCase(key));
-        if (key === "brand") await generateGradients(colors);
-        figma.notify(
-          `✅ Palette de couleurs de ${toPascalCase(key)} générée avec succès`,
-        );
-      } catch (error) {
-        await logger.error(`Erreur génération ${key}:`, error);
-        figma.notify(
-          `❌ Erreur lors de la génération de la palette de couleurs de ${toPascalCase(key)}`,
-          {
-            error: true,
-          },
-        );
-        return;
-      }
+      await generateColorPalette(colors, toPascalCase(key));
+      if (key === "brand") await generateGradients(colors);
+      figma.notify(
+        `✅ Palette de couleurs de ${toPascalCase(key)} générée avec succès`,
+      );
     }
   }
   if (
@@ -90,16 +79,8 @@ figma.ui.onmessage = async (msg) => {
     msg.type === "generateAll"
   ) {
     const greyHue = msg.datas?.neutralColors?.greyHue;
-    try {
-      await generateNeutralPalette(greyHue ?? "");
-      figma.notify("✅ Palette de couleurs Neutral générée avec succès");
-    } catch (error) {
-      await logger.error("Erreur génération Neutral:", error);
-      figma.notify("❌ Erreur lors de la génération de la palette Neutral", {
-        error: true,
-      });
-      return;
-    }
+    await generateNeutralPalette(greyHue ?? "");
+    figma.notify("✅ Palette de couleurs Neutral générée avec succès");
   }
 
   if (
@@ -114,51 +95,26 @@ figma.ui.onmessage = async (msg) => {
       const coreThemes = msg.datas?.[`${key}CoreThemes`];
       const colors = msg.datas?.colorsData?.[key];
       if (coreThemes && colors && themes && greyHue) {
-        try {
-          await generateColorThemes(
-            coreThemes,
-            themes,
-            toPascalCase(key),
-            greyHue,
-          );
-          await generateColorsThemesCollections(
-            coreThemes,
-            themes,
-            toPascalCase(key),
-            colors,
-          );
-          figma.notify(
-            `✅ Thèmes de couleurs de ${toPascalCase(key)} générés avec succès`,
-          );
-        } catch (error) {
-          await logger.error(
-            `Erreur lors de la génération des thèmes de ${toPascalCase(key)}:`,
-            error,
-          );
-          figma.notify(
-            `❌ Erreur lors de la génération des thèmes de ${toPascalCase(key)}`,
-            {
-              error: true,
-            },
-          );
-          return;
-        }
+        await generateColorThemes(
+          coreThemes,
+          themes,
+          toPascalCase(key),
+          greyHue,
+        );
+        await generateColorsThemesCollections(
+          coreThemes,
+          themes,
+          toPascalCase(key),
+          colors,
+        );
+        figma.notify(
+          `✅ Thèmes de couleurs de ${toPascalCase(key)} générés avec succès`,
+        );
       }
     }
     if (neutralColors) {
-      try {
-        await generateNeutralThemes(neutralColors);
-        figma.notify(`✅ Thèmes de couleurs Neutral générés avec succès`);
-      } catch (error) {
-        await logger.error(
-          `Erreur lors de la génération des thèmes Neutral:`,
-          error,
-        );
-        figma.notify(`❌ Erreur lors de la génération des thèmes Neutral`, {
-          error: true,
-        });
-        return;
-      }
+      await generateNeutralThemes(neutralColors);
+      figma.notify(`✅ Thèmes de couleurs Neutral générés avec succès`);
     }
   }
 
@@ -166,25 +122,11 @@ figma.ui.onmessage = async (msg) => {
     msg.type === "generateGraphicCharterColors" ||
     msg.type === "generateAll"
   ) {
-    try {
-      await generateGraphicCharterColors("Brand");
-      await generateGraphicCharterGradients();
-      await generateGraphicCharterColors("Feedback");
-      await generateGraphicCharterNeutral();
-      figma.notify(`✅ Charte graphique couleurs générée avec succès`);
-    } catch (error) {
-      await logger.error(
-        `Erreur lors de la génération de la charte graphique couleurs:`,
-        error,
-      );
-      figma.notify(
-        `❌ Erreur lors de la génération de la charte graphique couleurs`,
-        {
-          error: true,
-        },
-      );
-      return;
-    }
+    await generateGraphicCharterColors("Brand");
+    await generateGraphicCharterGradients();
+    await generateGraphicCharterColors("Feedback");
+    await generateGraphicCharterNeutral();
+    figma.notify(`✅ Charte graphique couleurs générée avec succès`);
   }
 
   if (msg.type === "generateLayoutGuide" || msg.type === "generateAll") {
@@ -195,45 +137,17 @@ figma.ui.onmessage = async (msg) => {
       });
       return;
     } else {
-      try {
-        await generateBreakpoints(layoutGuide);
-        await generateDensities(layoutGuide);
-        await generateContentHeights(layoutGuide);
-        await generateDevices(layoutGuide);
-        figma.notify("✅ Guide de mise en page généré avec succès");
-      } catch (error) {
-        await logger.error(
-          "Erreur génération du Guide de mise en page:",
-          error,
-        );
-        figma.notify(
-          "❌ Erreur lors de la génération du Guide de mise en page",
-          {
-            error: true,
-          },
-        );
-        return;
-      }
+      await generateBreakpoints(layoutGuide);
+      await generateDensities(layoutGuide);
+      await generateContentHeights(layoutGuide);
+      await generateDevices(layoutGuide);
+      figma.notify("✅ Guide de mise en page généré avec succès");
     }
   }
 
   if (msg.type === "generateViewportsPages" || msg.type === "generateAll") {
-    try {
-      await generateViewportsPages();
-      figma.notify("✅ Pages de présentations générées avec succès");
-    } catch (error) {
-      await logger.error(
-        "Erreur génération des Pages de présentations:",
-        error,
-      );
-      figma.notify(
-        "❌ Erreur lors de la génération des Pages de présentations",
-        {
-          error: true,
-        },
-      );
-      return;
-    }
+    await generateViewportsPages();
+    figma.notify("✅ Pages de présentations générées avec succès");
   }
 
   if (msg.type === "generateRadius" || msg.type === "generateAll") {
@@ -242,16 +156,8 @@ figma.ui.onmessage = async (msg) => {
       figma.notify("⚠️ Aucune donnée de radius fournie", { error: true });
       return;
     } else {
-      try {
-        await generateRadius(radius);
-        figma.notify("✅ Radius générés avec succès");
-      } catch (error) {
-        await logger.error("Erreur génération des Radius:", error);
-        figma.notify("❌ Erreur lors de la génération des Radius", {
-          error: true,
-        });
-        return;
-      }
+      await generateRadius(radius);
+      figma.notify("✅ Radius générés avec succès");
     }
   }
 
@@ -267,16 +173,8 @@ figma.ui.onmessage = async (msg) => {
       });
       return;
     } else {
-      try {
-        await generateFontSizes(baseFontSize);
-        figma.notify("✅ Tailles de police générées avec succès");
-      } catch (error) {
-        await logger.error("Erreur génération des tailles de police:", error);
-        figma.notify("❌ Erreur lors de la génération des tailles de police", {
-          error: true,
-        });
-        return;
-      }
+      await generateFontSizes(baseFontSize);
+      figma.notify("✅ Tailles de police générées avec succès");
     }
   }
 
@@ -294,23 +192,9 @@ figma.ui.onmessage = async (msg) => {
       });
       return;
     } else {
-      try {
-        await generateTypography(fontStyles);
-        await generateTypographyStyles(fontStyles, baseFontSize, lineGrid);
-        figma.notify("✅ Styles de typographie générées avec succès");
-      } catch (error) {
-        await logger.error(
-          "Erreur génération des styles de typographie:",
-          error,
-        );
-        figma.notify(
-          "❌ Erreur lors de la génération des styles de typographie",
-          {
-            error: true,
-          },
-        );
-        return;
-      }
+      await generateTypography(fontStyles);
+      await generateTypographyStyles(fontStyles, baseFontSize, lineGrid);
+      figma.notify("✅ Styles de typographie générées avec succès");
     }
   }
 
@@ -318,22 +202,8 @@ figma.ui.onmessage = async (msg) => {
     msg.type === "generateGraphicCharterTypography" ||
     msg.type === "generateAll"
   ) {
-    try {
-      await generateGraphicCharterTypography();
-      figma.notify(`✅ Charte graphique typographie générée avec succès`);
-    } catch (error) {
-      await logger.error(
-        `Erreur lors de la génération de la charte graphique typographie:`,
-        error,
-      );
-      figma.notify(
-        `❌ Erreur lors de la génération de la charte graphique typographie`,
-        {
-          error: true,
-        },
-      );
-      return;
-    }
+    await generateGraphicCharterTypography();
+    figma.notify(`✅ Charte graphique typographie générée avec succès`);
   }
 
   if (
@@ -352,16 +222,8 @@ figma.ui.onmessage = async (msg) => {
       );
       await generateTextDatas();
     } else {
-      try {
-        await generateTextDatas(textDatas);
-        figma.notify("✅ Textes générés avec succès");
-      } catch (error) {
-        await logger.error("Erreur lors de lagénération des textes:", error);
-        figma.notify("❌ Erreur lors de la génération des textes", {
-          error: true,
-        });
-        return;
-      }
+      await generateTextDatas(textDatas);
+      figma.notify("✅ Textes générés avec succès");
     }
   }
 
@@ -380,35 +242,16 @@ figma.ui.onmessage = async (msg) => {
       });
       return;
     } else {
-      try {
-        await generateImagesDatas(imagesDatas, layoutGuide);
-        await generateMediaInstance(layoutGuide);
-        await generateMedia(radiusDatas, layoutGuide);
-        await generateGallery(layoutGuide);
-        figma.notify("✅ Images générées avec succès");
-      } catch (error) {
-        await logger.error("Erreur lors de la génération des images:", error);
-        figma.notify("❌ Erreur lors de la génération des images", {
-          error: true,
-        });
-        return;
-      }
+      await generateImagesDatas(imagesDatas, layoutGuide);
+      await generateMediaInstance(layoutGuide);
+      await generateMedia(radiusDatas, layoutGuide);
+      await generateGallery(layoutGuide);
+      figma.notify("✅ Images générées avec succès");
     }
   }
 
   if (msg.type === "generateElevationsEffects" || msg.type === "generateAll") {
-    try {
-      generateElevationEffects();
-      figma.notify("✅ Élévations générées avec succès");
-    } catch (error) {
-      await logger.error(
-        "Erreur lors de la génération des élévations :",
-        error,
-      );
-      figma.notify("❌ Erreur lors de la génération des élévations", {
-        error: true,
-      });
-      return;
-    }
+    generateElevationEffects();
+    figma.notify("✅ Élévations générées avec succès");
   }
 };

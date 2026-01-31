@@ -120,7 +120,12 @@
 }
 
 .debug-log-message {
+  &-container {
+    display: flex;
+    gap: 8px;
+  }
   display: flex;
+  flex-direction: column;
   gap: 4px;
 }
 

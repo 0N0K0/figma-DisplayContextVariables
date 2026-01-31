@@ -2,17 +2,30 @@
  * Logger système pour envoyer les logs vers l'UI
  */
 
-import { LogLevel, LogMessage } from "../types/loggerTypes";
+import { LogLevel, LogMessage } from "../../common/types/loggerTypes";
 
 class Logger {
   private logs: LogMessage[] = [];
 
-  async log(level: LogLevel, message: string, data?: any) {
+  async log(level: LogLevel, message: string, data?: any, context?: string) {
+    let finalMessage = message;
+    let finalContext = context;
+
+    // Extraction automatique du contexte si présent entre crochets au début du message
+    if (!finalContext && finalMessage.trim().startsWith("[")) {
+      const match = finalMessage.match(/^\[(.*?)]\s*(.*)/);
+      if (match) {
+        finalContext = match[1];
+        finalMessage = match[2];
+      }
+    }
+
     const logMessage: LogMessage = {
       timestamp: Date.now(),
       level,
-      message,
+      message: finalMessage,
       data,
+      context: finalContext,
     };
 
     this.logs.push(logMessage);
@@ -20,36 +33,30 @@ class Logger {
     // Envoyer à l'UI
     figma.ui.postMessage({
       type: "log",
-      log: logMessage,
+      log: { ...logMessage },
     });
-
-    // Garder aussi dans la console
-    console[level === "debug" || level === "success" ? "log" : level](
-      message,
-      data,
-    );
 
     await new Promise<void>((r) => setTimeout(r, 0));
   }
 
-  async info(message: string, data?: any) {
-    await this.log("info", message, data);
+  async info(message: string, data?: any, context?: string) {
+    await this.log("info", message, data, context);
   }
 
-  async success(message: string, data?: any) {
-    await this.log("success", message, data);
+  async success(message: string, data?: any, context?: string) {
+    await this.log("success", message, data, context);
   }
 
-  async warn(message: string, data?: any) {
-    await this.log("warn", message, data);
+  async warn(message: string, data?: any, context?: string) {
+    await this.log("warn", message, data, context);
   }
 
-  async error(message: string, data?: any) {
-    await this.log("error", message, data);
+  async error(message: string, data?: any, context?: string) {
+    await this.log("error", message, data, context);
   }
 
-  async debug(message: string, data?: any) {
-    await this.log("debug", message, data);
+  async debug(message: string, data?: any, context?: string) {
+    await this.log("debug", message, data, context);
   }
 
   clear() {

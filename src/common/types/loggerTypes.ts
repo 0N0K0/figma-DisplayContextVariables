@@ -5,4 +5,5 @@ export interface LogMessage {
   level: LogLevel;
   message: string;
   data?: any;
+  context?: string;
 }
