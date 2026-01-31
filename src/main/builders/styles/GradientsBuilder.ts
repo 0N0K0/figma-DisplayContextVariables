@@ -1,16 +1,17 @@
 import { ColorsCollection } from "../../types/variablesTypes";
-import { angleToTransform, getCombinations } from "../../utils/gradientUtils";
+import { angleToTransform } from "../../utils/gradientUtils";
 import { logger } from "../../utils/logger";
 import { variableBuilder } from "../variables/variableBuilder";
 import { styleBuilder } from "./styleBuilder";
+import { catchError } from "../../utils/errorUtils";
+import { getCombinations } from "../../utils/dataUtils";
+import { COLLECTIONS } from "../../../common/constants/variablesConstants";
 
-export async function generateGradients(
-  brandColors: ColorsCollection,
-): Promise<void> {
-  try {
+export const generateGradients = catchError(
+  async (brandColors: ColorsCollection): Promise<void> => {
     let colors: Variable[] =
       await variableBuilder.getCollectionVariablesByGroup(
-        "Style\\Colors\\Palette",
+        COLLECTIONS.palette.name,
         "brand",
       );
 
@@ -52,7 +53,9 @@ export async function generateGradients(
         ] as Paint[],
       );
       logger.success(
-        `[generateGradients] Dégradé pour la couleur '${key}' généré avec succès.`,
+        `Dégradé pour la couleur '${key}' généré avec succès.`,
+        undefined,
+        "GradientsBuilder.generateGradients",
       );
     }
 
@@ -87,9 +90,11 @@ export async function generateGradients(
           ] as Paint[],
         );
         logger.success(
-          `[generateGradients] Dégradé pour la combinaison '${combo.join(
+          `Dégradé pour la combinaison '${combo.join(
             "-",
           )}' généré avec succès.`,
+          undefined,
+          "GradientsBuilder.generateGradients",
         );
       } else if (combo.length === 3) {
         const gradientStops: ColorStop[] = [];
@@ -126,18 +131,19 @@ export async function generateGradients(
           ] as Paint[],
         );
         logger.success(
-          `[generateGradients] Dégradé pour la combinaison '${combo.join(
+          `Dégradé pour la combinaison '${combo.join(
             "-",
           )}' généré avec succès.`,
+          undefined,
+          "GradientsBuilder.generateGradients",
         );
       }
     }
-    logger.success("[generateGradients] Gradients générés avec succès.");
-  } catch (error) {
-    await logger.error(
-      "[generateGradients] Erreur lors de la génération des dégradés :",
-      error,
+    logger.success(
+      "Gradients générés avec succès.",
+      undefined,
+      "GradientsBuilder.generateGradients",
     );
-    throw error;
-  }
-}
+  },
+  "GradientsBuilder.generateGradients",
+);

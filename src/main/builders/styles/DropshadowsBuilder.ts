@@ -1,6 +1,8 @@
 import { Shadow } from "../../types/stylesTypes";
 import { variableBuilder } from "../variables/variableBuilder";
 import { styleBuilder } from "./styleBuilder";
+import { catchError } from "../../utils/errorUtils";
+import { COLLECTIONS } from "../../../common/constants/variablesConstants";
 
 /**
  * Génère les ombres pour les 24 niveaux d'élévation MUI
@@ -27,9 +29,9 @@ import { styleBuilder } from "./styleBuilder";
  *     Spread = -arrondi supérieur( i / -3.5)
  */
 
-export async function generateElevationEffects(): Promise<void> {
+export const generateElevationEffects = catchError(async (): Promise<void> => {
   const group = "neutral/darkGrey/opacity/";
-  const colors = await variableBuilder.findVariables("Style\\Colors\\Palette", [
+  const colors = await variableBuilder.findVariables(COLLECTIONS.palette.name, [
     `${group}100`,
     `${group}150`,
     `${group}200`,
@@ -42,9 +44,9 @@ export async function generateElevationEffects(): Promise<void> {
         y: Math.round(level * 2.6),
         blur: Math.round(level * 2),
         spread: Math.round(level * 0.13),
-        color: colors[0].valuesByMode[
-          Object.keys(colors[0].valuesByMode)[0]
-        ] as RGBA,
+        color: (await variableBuilder.getVariableValueForMode(
+          colors[0],
+        )) as RGBA,
         boundVariables: {
           color: {
             type: "VARIABLE_ALIAS",
@@ -57,9 +59,9 @@ export async function generateElevationEffects(): Promise<void> {
         y: level,
         blur: Math.floor(level * 1.6),
         spread: Math.floor(level / 6.3),
-        color: colors[1].valuesByMode[
-          Object.keys(colors[1].valuesByMode)[0]
-        ] as RGBA,
+        color: (await variableBuilder.getVariableValueForMode(
+          colors[1],
+        )) as RGBA,
         boundVariables: {
           color: {
             type: "VARIABLE_ALIAS",
@@ -72,9 +74,9 @@ export async function generateElevationEffects(): Promise<void> {
         y: Math.round(level / 2),
         blur: Math.ceil(level * 1.65),
         spread: -Math.ceil(level / -3.5),
-        color: colors[2].valuesByMode[
-          Object.keys(colors[2].valuesByMode)[0]
-        ] as RGBA,
+        color: (await variableBuilder.getVariableValueForMode(
+          colors[2],
+        )) as RGBA,
         boundVariables: {
           color: {
             type: "VARIABLE_ALIAS",
@@ -101,4 +103,4 @@ export async function generateElevationEffects(): Promise<void> {
       effects,
     );
   }
-}
+}, "DropshadowsBuilder.generateElevationEffects");

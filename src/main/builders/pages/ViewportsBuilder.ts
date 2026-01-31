@@ -1,159 +1,75 @@
 import { variableBuilder } from "../variables/variableBuilder";
+import { catchError } from "../../utils/errorUtils";
+import { pageBuilder } from "./pageBuilder";
 import { logger } from "../../utils/logger";
+import { COLLECTIONS } from "../../../common/constants/variablesConstants";
 
-export async function generateViewportsPages() {
-  try {
-    const presentationsPage = figma.createPage();
-    presentationsPage.name = "PRESENTATIONS";
+export const generateViewportsPages = catchError(async () => {
+  await pageBuilder.getOrCreatePage("PRESENTATIONS");
 
-    const devicesCollection =
-      await variableBuilder.getCollection("System\\Devices");
-    if (!devicesCollection) {
-      return;
-    }
+  const config = {
+    Desktop: { sizes: { Landscape: ["XL", "LG"] }, density: "loose" },
+    Tablet: {
+      sizes: { Portrait: ["MD", "SM"], Landscape: ["MD"] },
+      density: "compact",
+    },
+    Mobile: {
+      sizes: { Portrait: ["XS"], Landscape: ["MD"] },
+      density: "tight",
+    },
+  };
 
-    const verticalDensitiesCollection = await variableBuilder.getCollection(
-      "System\\VerticalDensities",
-    );
-    if (!verticalDensitiesCollection) {
-      return;
-    }
+  for (const [deviceName, deviceConfig] of Object.entries(config)) {
+    await pageBuilder.createPage(`↓ ${deviceName}`);
+    for (const [orientationName, sizeNames] of Object.entries(
+      deviceConfig.sizes,
+    )) {
+      const orientationPage = await pageBuilder.createPage(
+        `  ► ${orientationName}`,
+      );
+      for (const sizeName of sizeNames) {
+        const deviceMode = await variableBuilder.getModeFromCollection(
+          COLLECTIONS.devices.name,
+          `${deviceName}/${orientationName}/${sizeName}`.toLowerCase(),
+        );
 
-    for (const deviceName of ["Desktop", "Tablet", "Mobile"]) {
-      const devicePage = figma.createPage();
-      devicePage.name = `↓ ${deviceName}`;
+        const verticalDensityMode = await variableBuilder.getModeFromCollection(
+          COLLECTIONS.verticalDensities.name,
+          `${deviceConfig.density}`.toLowerCase(),
+        );
 
-      if (deviceName === "Desktop") {
-        for (const sizeName of ["XL", "LG"]) {
-          const sizePage = figma.createPage();
-          sizePage.name = `    ♢ ${sizeName}`;
-          const deviceMode = devicesCollection.modes.find(
-            (m) =>
-              m.name === `${deviceName}/landscape/${sizeName}`.toLowerCase(),
-          );
-          if (!deviceMode) {
+        if (sizeNames.length > 1) {
+          const sizePage = await pageBuilder.createPage(`    ♢ ${sizeName}`);
+          if (!deviceMode.mode?.modeId || !verticalDensityMode.mode?.modeId)
             continue;
-          }
-          const verticalDensityMode = verticalDensitiesCollection.modes.find(
-            (m) => m.name === `loose`.toLowerCase(),
-          );
-          if (!verticalDensityMode) {
-            continue;
-          }
-          sizePage.setExplicitVariableModeForCollection(
-            devicesCollection,
-            deviceMode.modeId,
-          );
-          sizePage.setExplicitVariableModeForCollection(
-            verticalDensitiesCollection,
-            verticalDensityMode.modeId,
-          );
-        }
-      } else if (deviceName === "Tablet" || deviceName === "Mobile") {
-        for (const orientationName of ["Portrait", "Landscape"]) {
-          const orientationPage = figma.createPage();
-          orientationPage.name = `  ► ${orientationName}`;
-
-          if (deviceName === "Tablet") {
-            if (orientationName === "Portrait") {
-              for (const sizeName of ["MD", "SM"]) {
-                const sizePage = figma.createPage();
-                sizePage.name = `    ♢ ${sizeName}`;
-                const deviceMode = devicesCollection.modes.find(
-                  (m) =>
-                    m.name ===
-                    `${deviceName}/${orientationName}/${sizeName}`.toLowerCase(),
-                );
-                if (!deviceMode) {
-                  continue;
-                }
-                const verticalDensityMode =
-                  verticalDensitiesCollection.modes.find(
-                    (m) => m.name === `compact`.toLowerCase(),
-                  );
-                if (!verticalDensityMode) {
-                  continue;
-                }
-                sizePage.setExplicitVariableModeForCollection(
-                  devicesCollection,
-                  deviceMode.modeId,
-                );
-                sizePage.setExplicitVariableModeForCollection(
-                  verticalDensitiesCollection,
-                  verticalDensityMode.modeId,
-                );
-              }
-            } else {
-              const deviceMode = devicesCollection.modes.find(
-                (m) =>
-                  m.name ===
-                  `${deviceName}/${orientationName}/md`.toLowerCase(),
-              );
-              if (!deviceMode) {
-                continue;
-              }
-              const verticalDensityMode =
-                verticalDensitiesCollection.modes.find(
-                  (m) => m.name === `compact`.toLowerCase(),
-                );
-              if (!verticalDensityMode) {
-                continue;
-              }
-              orientationPage.setExplicitVariableModeForCollection(
-                devicesCollection,
-                deviceMode.modeId,
-              );
-              orientationPage.setExplicitVariableModeForCollection(
-                verticalDensitiesCollection,
-                verticalDensityMode.modeId,
-              );
-            }
-          } else {
-            let deviceMode;
-            if (orientationName === "Portrait") {
-              deviceMode = devicesCollection.modes.find(
-                (m) =>
-                  m.name ===
-                  `${deviceName}/${orientationName}/xs`.toLowerCase(),
-              );
-            } else {
-              deviceMode = devicesCollection.modes.find(
-                (m) =>
-                  m.name ===
-                  `${deviceName}/${orientationName}/md`.toLowerCase(),
-              );
-            }
-            if (!deviceMode) {
-              continue;
-            }
-            const verticalDensityMode = verticalDensitiesCollection.modes.find(
-              (m) => m.name === `tight`.toLowerCase(),
-            );
-            if (!verticalDensityMode) {
-              continue;
-            }
-            orientationPage.setExplicitVariableModeForCollection(
-              devicesCollection,
-              deviceMode.modeId,
-            );
-            orientationPage.setExplicitVariableModeForCollection(
-              verticalDensitiesCollection,
-              verticalDensityMode.modeId,
-            );
-          }
+          await pageBuilder.setModes(sizePage, [
+            {
+              collection: deviceMode.collection,
+              modeId: deviceMode.mode.modeId,
+            },
+            {
+              collection: verticalDensityMode.collection,
+              modeId: verticalDensityMode.mode.modeId,
+            },
+          ]);
+        } else if (
+          deviceMode.mode?.modeId &&
+          verticalDensityMode.mode?.modeId
+        ) {
+          await pageBuilder.setModes(orientationPage, [
+            {
+              collection: deviceMode.collection,
+              modeId: deviceMode.mode.modeId,
+            },
+            {
+              collection: verticalDensityMode.collection,
+              modeId: verticalDensityMode.mode.modeId,
+            },
+          ]);
         }
       }
     }
-
-    const separator = figma.createPage();
-    separator.name = "---";
-
-    const devOnlyPage = figma.createPage();
-    devOnlyPage.name = "⚡ DEV ONLY";
-  } catch (error) {
-    await logger.error(
-      "Erreur lors de la génération des pages de viewports.",
-      error,
-    );
   }
-}
+
+  await pageBuilder.createPages(["---", "⚡ DEV ONLY"]);
+}, "ViewportsBuilder.generateViewportsPages");

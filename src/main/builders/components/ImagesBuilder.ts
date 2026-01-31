@@ -5,30 +5,21 @@ import { elementBuilder } from "../elements/elementBuilder";
 import { pageBuilder } from "../pages/pageBuilder";
 import { variableBuilder } from "../variables/variableBuilder";
 import { componentBuilder } from "./componentBuilder";
-import { breakpointsConfig } from "../../utils/displayContextUtils";
-import {
-  createComponentSet,
-  createPages,
-  generateWidthHeight,
-} from "../../utils/imagesDatasUtils";
+import { breakpointsConfig } from "../../utils/systemUtils";
+import { imagesDatasHelper } from "../../helpers/imagesDatasHelper";
 import { RATIOS } from "../../constants/imagesDatasConstants";
 import { ORIENTATIONS } from "../../constants/systemConstants";
+import { catchError } from "../../utils/errorUtils";
+import { COLLECTIONS } from "../../../common/constants/variablesConstants";
 
-export async function generateImagesDatas(
-  imageDatas: imageDatas,
-  layoutGuide: layoutGuide,
-) {
-  try {
+const FILE_NAME = "ImagesBuilder";
+
+export const generateImagesDatas = catchError(
+  async (imageDatas: imageDatas, layoutGuide: layoutGuide) => {
     /**
      * Créer les pages
      */
-    const breakpointCollectionName = "System\\Breakpoints";
-    const XXLmode = await variableBuilder.getModeFromCollection(
-      breakpointCollectionName,
-      "xxl",
-    );
-
-    const imagePage = await createPages(
+    const imagePage = await imagesDatasHelper.createPages(
       ["DATAS", "    ♢ Image"],
       "    ♢ Image",
       "<ImageDatas>",
@@ -43,13 +34,17 @@ export async function generateImagesDatas(
     figma.currentPage = imagePage;
 
     const imageWidthVariable = await variableBuilder.findVariable(
-      breakpointCollectionName,
+      COLLECTIONS.breakpoints.name,
       "viewport/width/min-width",
     );
-    const imageWidth =
-      imageWidthVariable && XXLmode.mode
-        ? (imageWidthVariable.valuesByMode[XXLmode.mode?.modeId] as number)
-        : 1920;
+
+    const imageWidth = imageWidthVariable
+      ? ((await variableBuilder.getVariableValueForMode(
+          imageWidthVariable,
+          "xxl",
+          COLLECTIONS.breakpoints.name,
+        )) as number)
+      : 1920;
 
     const imageComponents: {
       component: ComponentNode;
@@ -63,11 +58,12 @@ export async function generateImagesDatas(
         const file = files[i];
 
         const ratio = file.width / file.height;
-        const { newWidth, newHeight } = await generateWidthHeight(
-          imageWidth,
-          layoutGuide.maxContentHeight,
-          ratio,
-        );
+        const { newWidth, newHeight } =
+          await imagesDatasHelper.generateWidthHeight(
+            imageWidth,
+            layoutGuide.maxContentHeight,
+            ratio,
+          );
 
         const bytes =
           file.data && file.data.byteLength
@@ -105,190 +101,201 @@ export async function generateImagesDatas(
       }
     }
 
-    await createComponentSet("<ImageDatas>", imagePage, imageComponents);
-  } catch (error) {
-    await logger.error(
-      "[generateImagesDatas] Erreur lors de la génération du jeu de composants d'images:",
-      error,
+    await imagesDatasHelper.createComponentSet(
+      "<ImageDatas>",
+      imagePage,
+      imageComponents,
     );
-    throw error;
-  }
-}
+  },
+  `${FILE_NAME}.generateImagesDatas`,
+);
 
-export async function generateMediaInstance(layoutGuide: layoutGuide) {
-  /**
-   * Créer les pages
-   */
-  const mediaPage = await createPages(
-    ["INSTANCES", "    ♢ _Media"],
-    "    ♢ _Media",
-    "_MediaPlaceHolder",
-  );
+export const generateMediaInstance = catchError(
+  async (layoutGuide: layoutGuide) => {
+    /**
+     * Créer les pages
+     */
+    const mediaPage = await imagesDatasHelper.createPages(
+      ["INSTANCES", "    ♢ _Media"],
+      "    ♢ _Media",
+      "_MediaPlaceHolder",
+    );
 
-  /**
-   * Créer le composant _MediaPlaceHolder
-   */
-  logger.info(
-    "[generateMediaInstance] Création du composant _MediaPlaceHolder...",
-  );
-  figma.currentPage = mediaPage;
+    /**
+     * Créer le composant _MediaPlaceHolder
+     */
+    logger.info(
+      "[generateMediaInstance] Création du composant _MediaPlaceHolder...",
+    );
+    figma.currentPage = mediaPage;
 
-  const width = 1920;
-  const height = layoutGuide.maxContentHeight;
+    const width = 1920;
+    const height = layoutGuide.maxContentHeight;
 
-  const mediaComponent = await elementBuilder.createElement(
-    `_MediaPlaceHolder`,
-    "COMPONENT",
-    mediaPage,
-    {
-      fills: [{ type: "SOLID", color: { r: 0.5, g: 0.5, b: 0.5 } }],
-      strokes: [{ type: "SOLID", color: { r: 0.15, g: 0.15, b: 0.15 } }],
-      strokeWeight: 1,
-      strokeAlign: "INSIDE",
-      x: 0,
-      y: 0,
-    },
-    { width, height },
-  );
+    const mediaComponent = (await elementBuilder.createElement(
+      `_MediaPlaceHolder`,
+      "COMPONENT",
+      mediaPage,
+      {
+        fills: [{ type: "SOLID", color: { r: 0.5, g: 0.5, b: 0.5 } }],
+        strokes: [{ type: "SOLID", color: { r: 0.15, g: 0.15, b: 0.15 } }],
+        strokeWeight: 1,
+        strokeAlign: "INSIDE",
+        x: 0,
+        y: 0,
+      },
+      { width, height },
+    )) as ComponentNode;
 
-  for (let i = 0; i < 2; i++) {
-    const line = figma.createLine();
-    line.resize(Math.hypot(width, height), 0);
-    line.rotation =
-      Math.atan2(i === 0 ? height : -height, width) * (180 / Math.PI);
-    line.strokes = [{ type: "SOLID", color: { r: 0.15, g: 0.15, b: 0.15 } }];
-    line.strokeWeight = 1;
-    line.x = 0;
-    line.y = i === 0 ? height : 0;
-    mediaComponent.appendChild(line);
-  }
-
-  logger.success(
-    "[generateMediaInstance] Composant _MediaPlaceHolder créée avec succès.",
-  );
-}
-
-export async function generateMedia(
-  radiusDatas: radiusDatas,
-  layoutGuide: layoutGuide,
-) {
-  /**
-   * Créer les pages
-   */
-
-  const breakpointCollectionName = "System\\Breakpoints";
-  const XXLmode = await variableBuilder.getModeFromCollection(
-    breakpointCollectionName,
-    "xxl",
-  );
-
-  const mediaPage = await createPages(
-    ["COMPONENTS", "↓ Data Display", "    ♢ Media"],
-    "    ♢ Media",
-    " <Media>",
-  );
-
-  const imageWidthVariable = await variableBuilder.findVariable(
-    breakpointCollectionName,
-    "viewport/width/min-width",
-  );
-  const imageWidth =
-    imageWidthVariable && XXLmode.mode
-      ? (imageWidthVariable.valuesByMode[XXLmode.mode?.modeId] as number)
-      : 1920;
-
-  /**
-   * Créer le jeu de composants de medias
-   */
-  logger.info("[generateMedia] Création du Jeu de composants <Media>...");
-  figma.currentPage = mediaPage;
-
-  let radiusVariables =
-    await variableBuilder.getCollectionVariables("Style\\Radius");
-  const radius: Record<string, number> = {};
-  if (radiusVariables.length > 0) {
-    for (const radiusVariable of radiusVariables) {
-      radius[radiusVariable.name] = radiusVariable.valuesByMode[
-        Object.keys(radiusVariable.valuesByMode)[0]
-      ] as number;
+    for (let i = 0; i < 2; i++) {
+      const line = figma.createLine();
+      line.resize(Math.hypot(width, height), 0);
+      line.rotation =
+        Math.atan2(i === 0 ? height : -height, width) * (180 / Math.PI);
+      line.strokes = [{ type: "SOLID", color: { r: 0.15, g: 0.15, b: 0.15 } }];
+      line.strokeWeight = 1;
+      line.x = 0;
+      line.y = i === 0 ? height : 0;
+      mediaComponent.appendChild(line);
     }
-  } else {
-    Object.assign(radius, { square: 0, ...radiusDatas, rounded: 9999 });
-  }
 
-  const mediaPlaceHolderPage = await pageBuilder.getPage("    ♢ _Media");
-  if (!mediaPlaceHolderPage) {
-    throw new Error(
-      "La page '    ♢ _Media' est introuvable. Veuillez générer l'instance _MediaPlaceHolder avant de générer le composant Media.",
+    logger.success(
+      "[generateMediaInstance] Composant _MediaPlaceHolder créée avec succès.",
     );
-  }
-  const mediaPlaceHolder = await elementBuilder.getElement(
-    "_MediaPlaceHolder",
-    mediaPlaceHolderPage,
-  );
-  if (!mediaPlaceHolder) {
-    throw new Error(
-      "Le composant '_MediaPlaceHolder' est introuvable. Veuillez générer l'instance _MediaPlaceHolder avant de générer le composant Media.",
+  },
+  `${FILE_NAME}.generateMediaInstance`,
+);
+
+export const generateMedia = catchError(
+  async (radiusDatas: radiusDatas, layoutGuide: layoutGuide) => {
+    /**
+     * Créer les pages
+     */
+
+    const XXLmode = await variableBuilder.getModeFromCollection(
+      COLLECTIONS.breakpoints.name,
+      "xxl",
     );
-  }
 
-  const mediaComponents = [];
+    const mediaPage = await imagesDatasHelper.createPages(
+      ["COMPONENTS", "↓ Data Display", "    ♢ Media"],
+      "    ♢ Media",
+      " <Media>",
+    );
 
-  for (const ratioConfig of RATIOS) {
-    const orientationsToUse =
-      ratioConfig.name !== "1:1" ? ORIENTATIONS : ["false"];
+    const imageWidthVariable = await variableBuilder.findVariable(
+      COLLECTIONS.breakpoints.name,
+      "viewport/width/min-width",
+    );
+    const imageWidth =
+      imageWidthVariable && XXLmode.mode
+        ? ((await variableBuilder.getVariableValueForMode(
+            imageWidthVariable,
+            "xxl",
+            COLLECTIONS.breakpoints.name,
+          )) as number)
+        : 1920;
 
-    for (const orientation of orientationsToUse) {
-      for (const [radiusKey, radiusValue] of Object.entries(radius)) {
-        let targetRatio = ratioConfig.ratio;
-        if (orientation === "portrait") {
-          targetRatio = 1 / targetRatio;
-        }
-        const { newWidth: width, newHeight: height } =
-          await generateWidthHeight(
-            imageWidth,
-            layoutGuide.maxContentHeight,
-            targetRatio,
+    /**
+     * Créer le jeu de composants de medias
+     */
+    logger.info("[generateMedia] Création du Jeu de composants <Media>...");
+    figma.currentPage = mediaPage;
+
+    let radiusVariables = await variableBuilder.getCollectionVariables(
+      COLLECTIONS.radius.name,
+    );
+    const radius: Record<string, number> = {};
+    if (radiusVariables.length > 0) {
+      for (const radiusVariable of radiusVariables) {
+        radius[radiusVariable.name] =
+          (await variableBuilder.getVariableValueForMode(
+            radiusVariable,
+          )) as number;
+      }
+    } else {
+      Object.assign(radius, { square: 0, ...radiusDatas, rounded: 9999 });
+    }
+
+    const mediaPlaceHolderPage = await pageBuilder.getPage("    ♢ _Media");
+    if (!mediaPlaceHolderPage) {
+      throw new Error(
+        "La page '    ♢ _Media' est introuvable. Veuillez générer l'instance _MediaPlaceHolder avant de générer le composant Media.",
+      );
+    }
+    const mediaPlaceHolder = await elementBuilder.getElement(
+      "_MediaPlaceHolder",
+      mediaPlaceHolderPage,
+    );
+    if (!mediaPlaceHolder) {
+      throw new Error(
+        "Le composant '_MediaPlaceHolder' est introuvable. Veuillez générer l'instance _MediaPlaceHolder avant de générer le composant Media.",
+      );
+    }
+
+    const mediaComponents = [];
+
+    for (const ratioConfig of RATIOS) {
+      const orientationsToUse =
+        ratioConfig.name !== "1:1" ? ORIENTATIONS : ["false"];
+
+      for (const orientation of orientationsToUse) {
+        for (const [radiusKey, radiusValue] of Object.entries(radius)) {
+          let targetRatio = ratioConfig.ratio;
+          if (orientation === "portrait") {
+            targetRatio = 1 / targetRatio;
+          }
+          const { newWidth: width, newHeight: height } =
+            await imagesDatasHelper.generateWidthHeight(
+              imageWidth,
+              layoutGuide.maxContentHeight,
+              targetRatio,
+            );
+
+          const mediaComponent = (await elementBuilder.createElement(
+            `ratio=${ratioConfig.name}, orientation=${orientation}, radius=${radiusKey}`,
+            "COMPONENT",
+            mediaPage,
+            {
+              cornerRadius: radiusValue,
+              clipsContent: true,
+              layoutMode: "HORIZONTAL",
+              layoutSizingHorizontal: "FIXED",
+              layoutSizingVertical: "FIXED",
+            },
+            { width, height },
+            true,
+          )) as ComponentNode;
+
+          await componentBuilder.createInstance(
+            mediaPlaceHolder as ComponentNode,
+            mediaComponent,
+            true,
+            {
+              layoutSizingHorizontal: "FILL",
+              layoutSizingVertical: "FILL",
+            },
           );
 
-        const mediaComponent = (await elementBuilder.createElement(
-          `ratio=${ratioConfig.name}, orientation=${orientation}, radius=${radiusKey}`,
-          "COMPONENT",
-          mediaPage,
-          {
-            cornerRadius: radiusValue,
-            clipsContent: true,
-            layoutMode: "HORIZONTAL",
-            layoutSizingHorizontal: "FIXED",
-            layoutSizingVertical: "FIXED",
-          },
-          { width, height },
-          true,
-        )) as ComponentNode;
-
-        await componentBuilder.createInstance(
-          mediaPlaceHolder as ComponentNode,
-          mediaComponent,
-          true,
-          {
-            layoutSizingHorizontal: "FILL",
-            layoutSizingVertical: "FILL",
-          },
-        );
-
-        mediaComponents.push(mediaComponent);
+          mediaComponents.push(mediaComponent);
+        }
       }
     }
-  }
 
-  await createComponentSet("<Media>", mediaPage, mediaComponents);
-}
+    await imagesDatasHelper.createComponentSet(
+      "<Media>",
+      mediaPage,
+      mediaComponents,
+    );
+  },
+  `${FILE_NAME}.generateMedia`,
+);
 
-export async function generateGallery(layoutGuide: layoutGuide) {
+export const generateGallery = catchError(async (layoutGuide: layoutGuide) => {
   /**
    * Créer les pages
    */
-  const galleryPage = await createPages(
+  const galleryPage = await imagesDatasHelper.createPages(
     ["COMPONENTS", "↓ Layout", "    ♢ Gallery"],
     "    ♢ Gallery",
     " <Gallery>",
@@ -371,13 +378,13 @@ export async function generateGallery(layoutGuide: layoutGuide) {
         )) as ComponentNode;
 
       const widthVariable = await variableBuilder.findVariable(
-        "System\\Breakpoints",
+        COLLECTIONS.breakpoints.name,
         `content-width/columns/${properties.columns}/min`,
       );
       if (widthVariable) {
         galleryComponent.setBoundVariable("width", widthVariable);
         const breakpointMode = await variableBuilder.getModeFromCollection(
-          "System\\Breakpoints",
+          COLLECTIONS.breakpoints.name,
           breakpoint,
         );
         if (breakpointMode.mode)
@@ -447,7 +454,7 @@ export async function generateGallery(layoutGuide: layoutGuide) {
           }
         } else {
           for (let row = 0; row < Math.ceil(24 / columns); row++) {
-            const rowFrame = await elementBuilder.createElement(
+            const rowFrame = (await elementBuilder.createElement(
               `row-${row + 1}`,
               "FRAME",
               galleryComponent,
@@ -457,7 +464,7 @@ export async function generateGallery(layoutGuide: layoutGuide) {
                 itemSpacing: layoutGuide.gutter,
                 ...galleryLayoutFramesPropeties,
               },
-            );
+            )) as FrameNode;
 
             let itemsForRow = sliceItems(row, columns, mediaInstances);
             const ratios = itemsForRow.map((item) => {
@@ -507,5 +514,9 @@ export async function generateGallery(layoutGuide: layoutGuide) {
       galleryComponents.push(galleryComponent);
     }
   }
-  await createComponentSet("<Gallery>", galleryPage, galleryComponents);
-}
+  await imagesDatasHelper.createComponentSet(
+    "<Gallery>",
+    galleryPage,
+    galleryComponents,
+  );
+}, `${FILE_NAME}.generateGallery`);

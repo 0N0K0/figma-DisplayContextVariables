@@ -1,14 +1,13 @@
 import { VariableConfig } from "../../types/variablesTypes";
 import { variableBuilder } from "./variableBuilder";
 import datas from "../../assets/datas.json";
-import { SCOPES } from "../../constants/variablesConstants";
 import { flatten } from "../../utils/dataUtils";
 import { logger } from "../../utils/logger";
+import { catchError } from "../../utils/errorUtils";
+import { SCOPES } from "../../constants/variablesConstants";
 
-export async function generateTextDatas(
-  textDatas?: Record<string, string>[],
-): Promise<Variable[]> {
-  try {
+export const generateTextDatas = catchError(
+  async (textDatas?: Record<string, string>[]): Promise<Variable[]> => {
     let merged: Record<string, string> = {};
     if (!textDatas || textDatas.length === 0) {
       merged = flatten(datas);
@@ -37,11 +36,6 @@ export async function generateTextDatas(
       `[generateTextDatas] ${newVariables.length} variables de données créées ou mises à jour avec succès.`,
     );
     return newVariables;
-  } catch (error) {
-    await logger.error(
-      "[generateTextDatas] Erreur lors de la génération des variables de données:",
-      error,
-    );
-    throw error;
-  }
-}
+  },
+  "TextDatasBuilder.generateTextDatas",
+);

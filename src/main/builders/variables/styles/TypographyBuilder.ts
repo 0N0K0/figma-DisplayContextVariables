@@ -1,7 +1,9 @@
 import { toKebabCase } from "../../../../common/utils/textUtils";
-import { SCOPES } from "../../../constants/variablesConstants";
+import { COLLECTIONS } from "../../../../common/constants/variablesConstants";
 import { VariableConfig } from "../../../types/variablesTypes";
 import { variableBuilder } from "../variableBuilder";
+import { catchError } from "../../../utils/errorUtils";
+import { SCOPES } from "../../../constants/variablesConstants";
 
 function createVariable(
   name: string,
@@ -18,52 +20,56 @@ function createVariable(
   }
   return {
     name,
-    collection: "Style\\Typography",
+    collection: COLLECTIONS.typography.name,
     type,
     value,
     scopes,
   };
 }
-export async function generateTypography(
-  fontStyles: Record<
-    string,
-    Record<
+export const generateTypography = catchError(
+  async (
+    fontStyles: Record<
       string,
-      Record<string, string | number | Record<string, string | number>>
-    >
-  >,
-): Promise<Variable[]> {
-  const variables: VariableConfig[] = [];
-  const variableNames = new Set<string>();
-  for (const [category, types] of Object.entries(fontStyles)) {
-    for (const [type, properties] of Object.entries(types)) {
-      for (const [property, variable] of Object.entries(properties)) {
-        if (typeof variable === "string" || typeof variable === "number") {
-          // Ignore empty string or undefined/null
-          if (variable === "" || variable === undefined || variable === null)
-            continue;
-          const varName =
-            `${category}/${type}/${toKebabCase(property)}`.toLowerCase();
-          if (variableNames.has(varName)) continue;
-          variableNames.add(varName);
-          variables.push(createVariable(varName, property, variable));
-        } else if (typeof variable === "object" && variable !== null) {
-          for (const [size, value] of Object.entries(variable)) {
+      Record<
+        string,
+        Record<string, string | number | Record<string, string | number>>
+      >
+    >,
+  ): Promise<Variable[]> => {
+    const variables: VariableConfig[] = [];
+    const variableNames = new Set<string>();
+    for (const [category, types] of Object.entries(fontStyles)) {
+      for (const [type, properties] of Object.entries(types)) {
+        for (const [property, variable] of Object.entries(properties)) {
+          if (typeof variable === "string" || typeof variable === "number") {
             // Ignore empty string or undefined/null
-            if (value === "" || value === undefined || value === null) continue;
+            if (variable === "" || variable === undefined || variable === null)
+              continue;
             const varName =
-              `${category}/${type}/${size}/${toKebabCase(property)}`.toLowerCase();
+              `${category}/${type}/${toKebabCase(property)}`.toLowerCase();
             if (variableNames.has(varName)) continue;
             variableNames.add(varName);
-            variables.push(createVariable(varName, property, value));
+            variables.push(createVariable(varName, property, variable));
+          } else if (typeof variable === "object" && variable !== null) {
+            for (const [size, value] of Object.entries(variable)) {
+              // Ignore empty string or undefined/null
+              if (value === "" || value === undefined || value === null)
+                continue;
+              const varName =
+                `${category}/${type}/${size}/${toKebabCase(property)}`.toLowerCase();
+              if (variableNames.has(varName)) continue;
+              variableNames.add(varName);
+              variables.push(createVariable(varName, property, value));
+            }
           }
         }
       }
     }
-  }
 
-  return await variableBuilder.createOrUpdateVariables(variables);
-}
+    return await variableBuilder.createOrUpdateVariables(variables);
+  },
+  "TypographyBuilder.generateTypography",
+);
 
 /**
  * Headings

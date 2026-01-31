@@ -1,496 +1,327 @@
-import { formatHex8, formatHsl, formatRgb, Rgb } from "culori";
 import { variableBuilder } from "../variables/variableBuilder";
+import { catchError } from "../../utils/errorUtils";
+import { graphicCharterHelper } from "../../helpers/graphicCharterHelper";
+import { pageBuilder } from "./pageBuilder";
+import {
+  COLOR_KEYWORDS,
+  LAYOUT_MODES,
+  NODE_META,
+  LIGHT_MODE_NAME,
+} from "../../constants/graphicCharterConstants";
+import { styleBuilder } from "../styles/styleBuilder";
+import { elementBuilder } from "../elements/elementBuilder";
+import { loadFont } from "../../utils/typographyUtils";
+import { COLLECTIONS } from "../../../common/constants/variablesConstants";
 
-function generateGraphicCharterPages(): PageNode {
-  // Trouver ou créer la page "CHARTE GRAPHIQUE"
-  let graphicCharterPage = figma.root.children.find(
-    (page) => page.name === "GRAPHIC CHARTER",
-  ) as PageNode | undefined;
-  if (!graphicCharterPage) {
-    graphicCharterPage = figma.createPage();
-    graphicCharterPage.name = "GRAPHIC CHARTER";
-  }
-  figma.currentPage = graphicCharterPage;
-  return graphicCharterPage;
-}
+const FILE_NAME = "GraphicCharterBuilder";
 
-async function generateFrame(
-  name: string,
-  theme: string,
-  layout: "GRID" | "HORIZONTAL",
-): Promise<FrameNode> {
-  const graphicCharterPage = generateGraphicCharterPages();
-  // Créer une frame pour les couleurs
-  let frame = graphicCharterPage.children.find(
-    (child) => child.name === name,
-  ) as FrameNode | undefined;
-  if (!frame) {
-    frame = figma.createFrame();
-    frame.fills = [];
-    frame.name = name;
-    frame.resize(1920, 1080);
-    frame.x = 0;
-    frame.layoutMode = layout;
-    frame.primaryAxisSizingMode = "FIXED";
-    frame.counterAxisSizingMode = "AUTO";
-    if (layout === "GRID") {
-      frame.gridColumnGap = 16;
-      frame.gridRowGap = 24;
-      frame.paddingTop = 48;
-      frame.paddingBottom = 48;
-      frame.paddingLeft = 32;
-      frame.paddingRight = 32;
-    } else {
-      frame.itemSpacing = 0;
-    }
-    frame.fills = [
+export const generateGraphicCharterColors = catchError(
+  async (category: string): Promise<void> => {
+    const themesCollection = await variableBuilder.getCollection(
+      COLLECTIONS.themes.name,
+    );
+    if (!themesCollection) return;
+    const themesModes = await variableBuilder.getModesFromCollection(
+      COLLECTIONS.themes.name,
+    );
+
+    const collectionName =
+      COLLECTIONS[category as keyof typeof COLLECTIONS].name;
+    const categoryCollection =
+      await variableBuilder.getCollection(collectionName);
+    if (!categoryCollection) return;
+    const categoryModes =
+      await variableBuilder.getModesFromCollection(collectionName);
+    const categoryColors =
+      await variableBuilder.getCollectionVariables(collectionName);
+    const coreColors = categoryColors.filter((color) =>
+      color.name.toLowerCase().includes(COLOR_KEYWORDS.shade),
+    );
+    const themeColors = categoryColors
+      .filter(
+        (color) =>
+          !color.name.toLowerCase().includes(COLOR_KEYWORDS.shade) &&
+          !color.name.toLowerCase().includes(COLOR_KEYWORDS.opacity),
+      )
+      .sort((a, b) => a.name.localeCompare(b.name, undefined));
+
+    const paletteFrame = await graphicCharterHelper.generateFrame(
+      `${category}\\Palettes`,
+      LIGHT_MODE_NAME,
+      LAYOUT_MODES.grid,
       {
-        type: "SOLID",
-        color: {
-          r: theme === "light" ? 1 : 0,
-          g: theme === "light" ? 1 : 0,
-          b: theme === "light" ? 1 : 0,
-        },
+        y: 0,
+        gridColumnCount: categoryModes.length + 1,
+        gridRowCount: coreColors.length + 1,
+        gridRowSizes: new Array(coreColors.length + 1).fill({
+          type: "HUG",
+        }),
       },
-    ];
-    graphicCharterPage.appendChild(frame);
-  }
-  return frame;
-}
-
-async function generateText(
-  parent: FrameNode,
-  name: string,
-  typography: "meta" | "body",
-  rowIndex?: number,
-  colIndex?: number,
-) {
-  await figma.loadFontAsync({ family: "Inter", style: "Regular" });
-
-  let text = parent.children.find((child) => child.name === name) as
-    | TextNode
-    | undefined;
-  if (!text) {
-    const textColor = await variableBuilder.findVariable(
-      "Style\\Colors\\Themes",
-      "neutral/text/core/primary",
     );
-    const textStyles = await figma.getLocalTextStylesAsync();
-    if (!textStyles) return;
-    const textStyle = textStyles.find(
-      (s) =>
-        s.name ===
-        (typography === "meta" ? "interface/meta/sm" : "core/body/sm"),
-    );
-    if (textStyle) {
-      await figma.loadFontAsync(textStyle.fontName as FontName);
-    }
 
-    text = figma.createText();
-    text.name = name;
-    text.characters = name;
-    text.textStyleId = textStyle ? textStyle.id : "";
-    text.fills = textColor
-      ? [
-          {
-            type: "SOLID",
-            color: { r: 0, g: 0, b: 0 },
-            boundVariables: {
-              color: {
-                id: textColor.id,
-                type: "VARIABLE_ALIAS",
-              },
-            },
-          },
-        ]
-      : [];
-    parent.appendChild(text);
-    if (rowIndex !== undefined && colIndex !== undefined)
-      text.setGridChildPosition(rowIndex, colIndex);
-  }
-}
+    for (let i = 0; i < coreColors.length; i++) {
+      const color = coreColors[i];
+      for (let j = 0; j < categoryModes.length; j++) {
+        const mode = categoryModes[j];
+        if (i === 0) {
+          await graphicCharterHelper.generateText(
+            paletteFrame,
+            mode.name,
+            NODE_META,
+            0,
+            j + 1,
+          );
+        }
 
-function distribute() {
-  const gap = 80;
-
-  const nodes = figma.currentPage.children;
-  // Point de départ
-  let cursorX = nodes[0]?.x ?? 0;
-  const baseY = nodes[0]?.y ?? 0;
-
-  for (const node of nodes) {
-    node.x = cursorX;
-    node.y = baseY;
-    cursorX += node.width + gap;
-  }
-}
-
-async function generateColorFrame(
-  color: Variable,
-  colorIndex: number,
-  collection: VariableCollection,
-  parent: FrameNode,
-  mode?: {
-    modeId: string;
-    name: string;
-  },
-  modeIndex?: number,
-  themeMode?: {
-    modeId: string;
-    name: string;
-  },
-): Promise<void> {
-  // Générer title
-  await generateText(parent, color.name, "meta", colorIndex, 0);
-
-  let colorTargetValue: VariableValue | undefined = mode
-    ? color.valuesByMode[mode.modeId]
-    : color.valuesByMode[Object.keys(color.valuesByMode)[0]];
-  let maxDepth = 10;
-  while (
-    colorTargetValue &&
-    typeof colorTargetValue === "object" &&
-    "type" in colorTargetValue &&
-    maxDepth-- > 0
-  ) {
-    const alias = await figma.variables.getVariableByIdAsync(
-      colorTargetValue.id,
-    );
-    if (!alias) break;
-    const possiblesModes = themeMode
-      ? [themeMode.modeId, Object.keys(alias.valuesByMode)[0]]
-      : [Object.keys(alias.valuesByMode)[0]];
-    for (const possibleMode of possiblesModes) {
-      const value = alias.valuesByMode[possibleMode];
-      if (value) {
-        colorTargetValue = value;
-        break;
+        await graphicCharterHelper.generateColorFrame(
+          color,
+          i + 1,
+          categoryCollection,
+          paletteFrame,
+          mode,
+          j,
+        );
       }
     }
-  }
-  if (
-    typeof colorTargetValue === "object" &&
-    colorTargetValue !== null &&
-    "a" in colorTargetValue
-  ) {
-    const RGB: Rgb = {
-      mode: "rgb",
-      r: colorTargetValue.r,
-      g: colorTargetValue.g,
-      b: colorTargetValue.b,
-      alpha: colorTargetValue.a,
-    };
 
-    const colorFrame = figma.createFrame();
-    colorFrame.fills = [];
-    colorFrame.name = color.name;
-    colorFrame.layoutMode = "HORIZONTAL";
-    colorFrame.primaryAxisSizingMode = "AUTO";
-    colorFrame.counterAxisSizingMode = "AUTO";
-    colorFrame.itemSpacing = 8;
-
-    const rect = figma.createRectangle();
-    rect.resize(72, 72);
-    rect.fills = [
-      {
-        type: "SOLID",
-        color: {
-          r: colorTargetValue.r,
-          g: colorTargetValue.g,
-          b: colorTargetValue.b,
+    for (const theme of themesModes) {
+      const themeColorFrame = await graphicCharterHelper.generateFrame(
+        `${category}\\${theme.name}`,
+        theme.name.toLowerCase(),
+        LAYOUT_MODES.grid,
+        {
+          y: 0,
+          gridColumnCount: categoryModes.length + 1,
+          gridRowCount: themeColors.length + 1,
+          gridRowSizes: new Array(themeColors.length + 1).fill({
+            type: "HUG",
+          }),
         },
-        opacity: colorTargetValue.a,
-        boundVariables: {
-          color: {
-            id: color.id,
-            type: "VARIABLE_ALIAS",
-          },
-        },
-      },
-    ];
-    rect.cornerRadius = 4;
-    if (mode) {
-      rect.setExplicitVariableModeForCollection(collection, mode.modeId);
-    }
-    colorFrame.appendChild(rect);
-
-    const colorValuesFrame = figma.createFrame();
-    colorValuesFrame.fills = [];
-    colorValuesFrame.layoutMode = "VERTICAL";
-    colorValuesFrame.primaryAxisSizingMode = "AUTO";
-    colorValuesFrame.counterAxisSizingMode = "AUTO";
-    colorValuesFrame.itemSpacing = 0;
-
-    // Générer Hex
-    await generateText(colorValuesFrame, formatHex8(RGB), "body");
-    // Générer RGB
-    await generateText(colorValuesFrame, formatRgb(RGB), "body");
-    // Générer HSL
-    await generateText(colorValuesFrame, formatHsl(RGB), "body");
-    colorFrame.appendChild(colorValuesFrame);
-
-    parent.appendChild(colorFrame);
-    colorFrame.setGridChildPosition(colorIndex, modeIndex ? modeIndex + 1 : 1);
-  }
-}
-
-export async function generateGraphicCharterColors(
-  category: string,
-): Promise<void> {
-  const themesCollection = await variableBuilder.getCollection(
-    "Style\\Colors\\Themes",
-  );
-  if (!themesCollection) return;
-  const themesModes = await variableBuilder.getModesFromCollection(
-    "Style\\Colors\\Themes",
-  );
-
-  const collectionName = `Style\\Colors\\${category}`;
-  const categoryCollection =
-    await variableBuilder.getCollection(collectionName);
-  if (!categoryCollection) return;
-  const categoryModes =
-    await variableBuilder.getModesFromCollection(collectionName);
-  const categoryColors =
-    await variableBuilder.getCollectionVariables(collectionName);
-  const coreColors = categoryColors.filter((color) =>
-    color.name.toLowerCase().includes("shade"),
-  );
-  const themeColors = categoryColors
-    .filter(
-      (color) =>
-        !color.name.toLowerCase().includes("shade") &&
-        !color.name.toLowerCase().includes("opacity"),
-    )
-    .sort((a, b) => a.name.localeCompare(b.name, undefined));
-
-  const createdFrames: FrameNode[] = [];
-  const paletteFrame = await generateFrame(
-    `${category}\\Palettes`,
-    "light",
-    "GRID",
-  );
-  paletteFrame.y = 0;
-  paletteFrame.gridColumnCount = categoryModes.length + 1;
-  paletteFrame.gridRowCount = coreColors.length + 1;
-  paletteFrame.gridRowSizes = new Array(coreColors.length + 1).fill({
-    type: "HUG",
-  });
-  createdFrames.push(paletteFrame);
-
-  for (const color of coreColors) {
-    for (const mode of categoryModes) {
-      // Générer mode title
-      await generateText(
-        paletteFrame,
-        mode.name,
-        "meta",
-        0,
-        categoryModes.indexOf(mode) + 1,
       );
 
-      await generateColorFrame(
-        color,
-        coreColors.indexOf(color) + 1,
-        categoryCollection,
-        paletteFrame,
-        mode,
-        categoryModes.indexOf(mode),
-      );
-    }
-  }
-
-  for (const theme of themesModes) {
-    const themeColorFrame = await generateFrame(
-      `${category}\\${theme.name}`,
-      theme.name.toLowerCase(),
-      "GRID",
-    );
-    createdFrames.push(themeColorFrame);
-    themeColorFrame.y = 0;
-    themeColorFrame.gridColumnCount = categoryModes.length + 1;
-    themeColorFrame.gridRowCount = themeColors.length + 1;
-    themeColorFrame.gridRowSizes = new Array(themeColors.length + 1).fill({
-      type: "HUG",
-    });
-    themeColorFrame.setExplicitVariableModeForCollection(
-      themesCollection,
-      theme.modeId,
-    );
-
-    for (const mode of categoryModes) {
-      // Générer mode title
-      await generateText(
-        themeColorFrame,
-        mode.name,
-        "meta",
-        0,
-        categoryModes.indexOf(mode) + 1,
-      );
-
-      for (const color of themeColors) {
-        await generateColorFrame(
-          color,
-          themeColors.indexOf(color) + 1,
-          categoryCollection,
+      for (let i = 0; i < categoryModes.length; i++) {
+        const mode = categoryModes[i];
+        await graphicCharterHelper.generateText(
           themeColorFrame,
-          mode,
-          categoryModes.indexOf(mode),
+          mode.name,
+          NODE_META,
+          0,
+          i + 1,
+        );
+
+        for (let j = 0; j < themeColors.length; j++) {
+          const color = themeColors[j];
+          await graphicCharterHelper.generateColorFrame(
+            color,
+            j + 1,
+            categoryCollection,
+            themeColorFrame,
+            mode,
+            i,
+            theme,
+          );
+        }
+      }
+    }
+
+    pageBuilder.distributePages();
+  },
+  `${FILE_NAME}.generateGraphicCharterColors`,
+);
+
+export const generateGraphicCharterGradients = catchError(async () => {
+  const gradientStyles = await styleBuilder.getStyles("paint");
+  if (!gradientStyles) return;
+
+  const gradientsFrame = await graphicCharterHelper.generateFrame(
+    "Style\\Colors\\Gradients",
+    LIGHT_MODE_NAME,
+    LAYOUT_MODES.grid,
+    {
+      y: 0,
+      gridColumnCount: 2,
+      gridRowCount: gradientStyles.length,
+      gridRowSizes: new Array(gradientStyles.length).fill({
+        type: "HUG",
+      }),
+    },
+  );
+
+  for (let i = 0; i < gradientStyles.length; i++) {
+    const style = gradientStyles[i];
+    await graphicCharterHelper.generateText(
+      gradientsFrame,
+      style.name,
+      NODE_META,
+      i,
+      0,
+    );
+
+    await elementBuilder.createElement(
+      style.name,
+      "FRAME",
+      gradientsFrame,
+      {
+        fillStyleId: style.id,
+      },
+      { width: 72, height: 72 },
+      false,
+      {
+        row: i,
+        column: 1,
+      },
+    );
+  }
+
+  pageBuilder.distributePages();
+}, `${FILE_NAME}.generateGraphicCharterGradients`);
+
+export const generateGraphicCharterNeutral = catchError(
+  async (): Promise<void> => {
+    const themesCollection = await variableBuilder.getCollection(
+      COLLECTIONS.themes.name,
+    );
+    if (!themesCollection) return;
+    const themesModes = await variableBuilder.getModesFromCollection(
+      COLLECTIONS.themes.name,
+    );
+    const themeColors = await variableBuilder.getCollectionVariables(
+      COLLECTIONS.themes.name,
+    );
+    const neutralColors = themeColors
+      .filter((color) =>
+        color.name.toLowerCase().includes(COLOR_KEYWORDS.neutral),
+      )
+      .sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, { numeric: true }),
+      );
+
+    const themesFrame = await graphicCharterHelper.generateFrame(
+      COLOR_KEYWORDS.neutral,
+      LIGHT_MODE_NAME,
+      LAYOUT_MODES.horizontal,
+    );
+
+    for (const theme of themesModes) {
+      const themeColorFrame = (await elementBuilder.getOrCreateElement(
+        theme.name,
+        "FRAME",
+        themesFrame,
+        {
+          fills: [
+            {
+              type: "SOLID",
+              color: {
+                r: theme.name === "Light" ? 1 : 0,
+                g: theme.name === "Light" ? 1 : 0,
+                b: theme.name === "Light" ? 1 : 0,
+              },
+            },
+          ],
+          layoutMode: "GRID",
+          counterAxisSizingMode: "AUTO",
+          gridColumnGap: 16,
+          gridRowGap: 24,
+          paddingTop: 48,
+          paddingBottom: 48,
+          paddingLeft: 32,
+          paddingRight: 32,
+          gridColumnCount: 2,
+          gridRowCount: neutralColors.length,
+          gridColumnSizes: [{ type: "FLEX" }, { type: "FLEX" }],
+          gridRowSizes: new Array(neutralColors.length).fill({ type: "HUG" }),
+        },
+        { width: 960, height: 1080 },
+        false,
+        {
+          row: 0,
+          column: 0,
+        },
+        { collection: themesCollection, modeId: theme.modeId },
+      )) as FrameNode;
+
+      for (let i = 0; i < neutralColors.length; i++) {
+        const color = neutralColors[i];
+        await graphicCharterHelper.generateColorFrame(
+          color,
+          i,
+          themesCollection,
+          themeColorFrame,
+          undefined,
+          undefined,
           theme,
         );
       }
     }
-  }
 
-  distribute();
-}
+    pageBuilder.distributePages();
+  },
+  `${FILE_NAME}.generateGraphicCharterNeutral`,
+);
 
-export async function generateGraphicCharterGradients() {
-  const gradientStyles = await figma.getLocalPaintStylesAsync();
-  if (!gradientStyles) return;
+export const generateGraphicCharterTypography = catchError(
+  async (): Promise<void> => {
+    const textStyles = await styleBuilder.getStyles("text");
+    if (!textStyles) return;
 
-  const gradientsFrame = await generateFrame(
-    `Style\\Colors\\Gradients`,
-    "light",
-    "GRID",
-  );
-  gradientsFrame.y = 0;
-  gradientsFrame.gridColumnCount = 2;
-  gradientsFrame.gridRowCount = gradientStyles.length;
-  gradientsFrame.gridRowSizes = new Array(gradientStyles.length).fill({
-    type: "HUG",
-  });
-
-  for (const style of gradientStyles) {
-    await generateText(
-      gradientsFrame,
-      style.name,
-      "meta",
-      gradientStyles.indexOf(style),
-      0,
-    );
-
-    const gradientFrame = figma.createFrame();
-    gradientFrame.name = style.name;
-    gradientFrame.fillStyleId = style.id;
-    gradientFrame.resize(72, 72);
-    gradientsFrame.appendChild(gradientFrame);
-    gradientFrame.setGridChildPosition(gradientStyles.indexOf(style), 1);
-  }
-  distribute();
-}
-
-export async function generateGraphicCharterNeutral(): Promise<void> {
-  const themeCollectionName = `Style\\Colors\\Themes`;
-
-  const themesCollection =
-    await variableBuilder.getCollection(themeCollectionName);
-  if (!themesCollection) return;
-  const themesModes =
-    await variableBuilder.getModesFromCollection(themeCollectionName);
-  const themeColors =
-    await variableBuilder.getCollectionVariables(themeCollectionName);
-  const neutralColors = themeColors
-    .filter((color) => color.name.toLowerCase().includes("neutral"))
-    .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
-
-  const createdFrames: FrameNode[] = [];
-  const themesFrame = await generateFrame(`Neutral`, "light", "HORIZONTAL");
-
-  for (const theme of themesModes) {
-    let themeColorFrame = themesFrame.children.find(
-      (child) => child.name === theme.name,
-    ) as FrameNode | undefined;
-    if (!themeColorFrame) {
-      themeColorFrame = figma.createFrame();
-      themeColorFrame.resize(960, 1080);
-      themeColorFrame.fills = [];
-      themeColorFrame.name = theme.name;
-      themeColorFrame.layoutMode = "GRID";
-      themeColorFrame.counterAxisSizingMode = "AUTO";
-      themeColorFrame.gridColumnGap = 16;
-      themeColorFrame.gridRowGap = 24;
-      themeColorFrame.paddingTop = 48;
-      themeColorFrame.paddingBottom = 48;
-      themeColorFrame.paddingLeft = 32;
-      themeColorFrame.paddingRight = 32;
-      themeColorFrame.fills = [
-        {
-          type: "SOLID",
-          color: {
-            r: theme.name === "Light" ? 1 : 0,
-            g: theme.name === "Light" ? 1 : 0,
-            b: theme.name === "Light" ? 1 : 0,
-          },
-        },
-      ];
-      themesFrame.appendChild(themeColorFrame);
-    }
-
-    createdFrames.push(themeColorFrame);
-    themeColorFrame.gridColumnCount = 2;
-    themeColorFrame.gridRowCount = neutralColors.length;
-    themeColorFrame.gridColumnSizes = [{ type: "FLEX" }, { type: "FLEX" }];
-    themeColorFrame.gridRowSizes = new Array(neutralColors.length).fill({
-      type: "HUG",
+    await loadFont({
+      family: "Inter",
+      style: "Regular",
     });
-    themeColorFrame.setExplicitVariableModeForCollection(
-      themesCollection,
-      theme.modeId,
+
+    const typographyFrame = await graphicCharterHelper.generateFrame(
+      COLLECTIONS.typography.name,
+      LIGHT_MODE_NAME,
+      LAYOUT_MODES.grid,
+      {
+        y: 0,
+        gridColumnCount: 2,
+        gridRowCount: textStyles.length,
+        gridRowSizes: new Array(textStyles.length).fill({
+          type: "HUG",
+        }),
+        gridColumnSizes: [{ type: "FLEX" }, { type: "HUG" }],
+      },
     );
-    for (const color of neutralColors) {
-      await generateColorFrame(
-        color,
-        neutralColors.indexOf(color),
-        themesCollection,
-        themeColorFrame,
+
+    const uniqueFonts = [
+      ...new Set(
+        textStyles
+          .filter((style): style is TextStyle => "fontName" in style)
+          .map((style) => style.fontName),
+      ),
+    ];
+    await Promise.all(uniqueFonts.map((font) => loadFont(font)));
+
+    for (let i = 0; i < textStyles.length; i++) {
+      const style = textStyles[i];
+
+      await graphicCharterHelper.generateText(
+        typographyFrame,
+        style.name,
+        NODE_META,
+        i,
+        0,
+      );
+
+      await elementBuilder.createElement(
+        style.name,
+        "TEXT",
+        typographyFrame,
+        {
+          textStyleId: style.id,
+          characters: "The quick brown fox jumps over the lazy dog.",
+        },
         undefined,
-        undefined,
-        theme,
+        false,
+        {
+          row: i,
+          column: 1,
+        },
       );
     }
-  }
 
-  distribute();
-}
-
-export async function generateGraphicCharterTypography(): Promise<void> {
-  const textStyles = await figma.getLocalTextStylesAsync();
-  if (!textStyles) return;
-
-  await figma.loadFontAsync({ family: "Inter", style: "Regular" });
-
-  const typographyFrame = await generateFrame(
-    `Style\\Typography`,
-    "light",
-    "GRID",
-  );
-  typographyFrame.y = 0;
-  typographyFrame.gridColumnCount = 2;
-  typographyFrame.gridRowCount = textStyles.length;
-  typographyFrame.gridRowSizes = new Array(textStyles.length).fill({
-    type: "HUG",
-  });
-  typographyFrame.gridColumnSizes = [{ type: "FLEX" }, { type: "HUG" }];
-
-  for (const style of textStyles) {
-    await figma.loadFontAsync(style.fontName as FontName);
-
-    await generateText(
-      typographyFrame,
-      style.name,
-      "meta",
-      textStyles.indexOf(style),
-      0,
-    );
-
-    const text = figma.createText();
-    text.name = style.name;
-    text.characters = "The quick brown fox jumps over the lazy dog.";
-    text.textStyleId = style.id;
-    typographyFrame.appendChild(text);
-    text.setGridChildPosition(textStyles.indexOf(style), 1);
-  }
-
-  distribute();
-}
+    pageBuilder.distributePages();
+  },
+  `${FILE_NAME}.generateGraphicCharterTypography`,
+);
