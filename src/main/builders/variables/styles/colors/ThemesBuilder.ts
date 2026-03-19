@@ -167,7 +167,6 @@ export const generateColorThemes = catchError(
           );
 
           // Créer la variable de thème avec alias vers la palette
-          name;
           variables.push({
             name: `${colorFamily}/${category}/${state === "border" ? `core/${state}` : `state/${state}`}`.toLowerCase(),
             collection: COLLECTIONS.themes.name,

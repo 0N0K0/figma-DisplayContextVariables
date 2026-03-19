@@ -130,7 +130,7 @@ class GraphicCharterHelper {
         };
 
         const colorValuesFrame = (await elementBuilder.getOrCreateElement(
-          `${color.name}-values`,
+          `${color.name}-${mode ? mode.name : "values"}`,
           "FRAME",
           parent,
           {

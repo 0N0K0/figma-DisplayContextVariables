@@ -84,12 +84,7 @@ figma.ui.onmessage = async (msg) => {
       const coreThemes = msg.datas?.[`${key}CoreThemes`];
       const colors = msg.datas?.colorsData?.[key];
       await generateColorThemes(coreThemes, themes, toPascalCase(key), greyHue);
-      await generateColorsThemesCollections(
-        coreThemes,
-        themes,
-        toPascalCase(key),
-        colors,
-      );
+      await generateColorsThemesCollections(coreThemes, themes, key, colors);
     }
     await generateNeutralThemes(neutralColors);
   }
@@ -98,9 +93,9 @@ figma.ui.onmessage = async (msg) => {
     msg.type === "generateGraphicCharterColors" ||
     msg.type === "generateAll"
   ) {
-    await generateGraphicCharterColors("Brand");
+    await generateGraphicCharterColors("brand");
     await generateGraphicCharterGradients();
-    await generateGraphicCharterColors("Feedback");
+    await generateGraphicCharterColors("feedback");
     await generateGraphicCharterNeutral();
   }
 
