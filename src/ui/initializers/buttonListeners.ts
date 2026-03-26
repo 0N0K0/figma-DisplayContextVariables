@@ -8,6 +8,9 @@ import { debugPanel } from "../components/debugPanel";
 import { layoutGuideType } from "../../common/types";
 import { stringify } from "querystring";
 
+/** Mettre à true pour activer les logs de débogage. Toujours false en production. */
+const DEBUG = false;
+
 // List of button IDs corresponding to different actions
 const btns = [
   "brand-colors",
@@ -104,7 +107,7 @@ export function attachButtonListeners() {
         // debugPanel.show();
 
         const formData = getFormData();
-        console.log("📋 FormData complète:", formData);
+        if (DEBUG) console.log("📋 FormData complète:", formData);
 
         // Handle Color Families
         const colorsData: Record<string, Record<string, string>> = {};
