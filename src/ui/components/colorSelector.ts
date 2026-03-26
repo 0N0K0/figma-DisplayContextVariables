@@ -1,5 +1,8 @@
 import { COLOR_DATA } from "../constants";
 
+/** Mettre à true pour activer les logs de débogage. Toujours false en production. */
+const DEBUG = false;
+
 function formatColorName(name: string): string {
   return name
     .replace(/([A-Z])/g, " $1")
@@ -140,7 +143,7 @@ export function initColorSelector(wrapper: HTMLElement): void {
   const text = wrapper.querySelector<HTMLElement>(".color-text");
 
   if (!button || !popup || !preview || !text) {
-    console.warn("❌ Color selector elements not found", {
+    if (DEBUG) console.warn("❌ Color selector elements not found", {
       button: !!button,
       popup: !!popup,
       preview: !!preview,
@@ -267,7 +270,7 @@ export function initAllColorSelectors(): void {
 
   if (wrappers.length === 0) {
     console.error("❌ CRITICAL: No color selector wrappers found!");
-    console.log("Available divs:", document.querySelectorAll("div").length);
+    if (DEBUG) console.log("Available divs:", document.querySelectorAll("div").length);
     return;
   }
 

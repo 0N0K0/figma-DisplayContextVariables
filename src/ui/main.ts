@@ -11,6 +11,9 @@ import {
 } from "./initializers";
 import { initImageCategoryList } from "./initializers/imageCategoryInitializer";
 
+/** Mettre à true pour activer les logs de débogage. Toujours false en production. */
+const DEBUG = false;
+
 document.addEventListener("DOMContentLoaded", () => {
   initTabs();
 
@@ -42,7 +45,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     switch (message.type) {
       case "notification":
-        console.log("Plugin notification:", message.message);
+        if (DEBUG) console.log("Plugin notification:", message.message);
         break;
     }
   };

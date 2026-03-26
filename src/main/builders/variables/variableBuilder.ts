@@ -128,16 +128,24 @@ export class VariableBuilder {
     return vars.filter((v) => v.name === variableName)[0];
   }
 
+  /**
+   * Trouve plusieurs variables par collection et noms.
+   *
+   * Effectue un seul appel à l'API Figma (getLocalVariablesAsync) puis
+   * filtre le résultat en mémoire — bien plus efficace que N appels séquentiels.
+   *
+   * @param collectionName - Nom de la collection cible
+   * @param variableNames  - Liste des noms de variables recherchées
+   * @returns Variables trouvées (dans l'ordre de variableNames)
+   */
   async findVariables(
     collectionName: string,
     variableNames: string[],
   ): Promise<Variable[]> {
-    const variables: Variable[] = [];
-    for (const name of variableNames) {
-      const variable = await this.findVariable(collectionName, name);
-      if (variable) variables.push(variable);
-    }
-    return variables;
+    // Un seul appel API au lieu de N appels séquentiels via findVariable()
+    const allVars = await this.getCollectionVariables(collectionName);
+    const nameSet = new Set(variableNames);
+    return allVars.filter((v) => nameSet.has(v.name));
   }
 
   /**

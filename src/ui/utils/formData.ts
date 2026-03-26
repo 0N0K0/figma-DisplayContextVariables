@@ -1,3 +1,7 @@
+
+
+/** Mettre à true pour activer les logs de débogage. Toujours false en production. */
+const DEBUG = false;
 export interface FormData {
   [key: string]: string | number | File[];
 }
@@ -87,7 +91,7 @@ export function getFormData(): FormData {
         const files = fileListInstance.getFiles();
         data[inputId] = files;
       } else {
-        console.warn(
+        if (DEBUG) console.warn(
           "❌ Pas d'instance ou pas de méthode getFiles pour:",
           inputId,
         );
